@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+
+:root {
+  /* The app is light-only for now; declaring it stops browsers from auto-darkening
+     native controls (selects, scrollbars, date pickers) against our light surfaces. */
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  /* Kills the grey flash on tap in mobile Safari/Chrome — we render our own active states. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Anchored headings shouldn't hide under the sticky navbar. */
+:target {
+  scroll-margin-top: 5rem;
+}
+
+/* Respect the OS "reduce motion" setting globally rather than per-component. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

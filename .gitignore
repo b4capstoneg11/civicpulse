@@ -1,0 +1,41 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+.env
+supabase/functions/.env
+.secrets.ps1
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.vercel
+.env*
+# ...but the template must be committed: it documents what config is required.
+!.env.example
+
+# Local tooling config and vendored third-party agent skills — not project source.
+.claude/
+
+# Screenshots used for debugging, not part of the application.
+Error/
+
+# Supabase CLI local state (linked project ref, pooler URL, cached versions).
+supabase/.temp/
