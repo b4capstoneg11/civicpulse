@@ -3,11 +3,20 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { readFunctionError } from '../lib/functionError'
 import { useAuth } from '../hooks/useAuth'
+import { ROLE_LABELS } from '../lib/labels'
 import { Alert, Spinner } from './ui'
 
 interface Turn {
   role: 'user' | 'assistant'
   content: string
+}
+
+// What each role's assistant can actually reach — shown in the header so the
+// difference between the three is stated, not just implied.
+const SCOPE_NOTE: Record<string, string> = {
+  super_admin: 'all departments',
+  dept_admin: 'your department only',
+  field_engineer: 'your assigned tickets only',
 }
 
 const SUGGESTIONS: Record<string, string[]> = {
@@ -112,6 +121,24 @@ export function AssistantDrawer() {
   const logRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
 
+  // This drawer is mounted outside the routes so a conversation survives
+  // navigation — which also means it survives a logout. Without this reset the
+  // next person to sign in would inherit the previous user's conversation, and
+  // a staff admin could read a super admin's cross-department answers.
+  const userId = session?.user.id ?? null
+  const previousUserId = useRef<string | null>(userId)
+
+  useEffect(() => {
+    if (previousUserId.current !== userId) {
+      previousUserId.current = userId
+      setTurns([])
+      setDraft('')
+      setError(null)
+      setBusy(false)
+      setOpen(false)
+    }
+  }, [userId])
+
   // Focus moves in on open and back to the launcher on close; Tab stays inside.
   useEffect(() => {
     if (!open) return
@@ -209,13 +236,17 @@ export function AssistantDrawer() {
             className="relative flex h-full w-full max-w-md flex-col overflow-hidden bg-white shadow-2xl"
           >
             <header className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
-              <div>
+              <div className="min-w-0">
                 <h2 id={titleId} className="text-sm font-semibold text-slate-900">
                   Ask CivicPulse
                 </h2>
-                <p className="text-xs text-slate-500">
-                  Answers come from your ticket data
-                  {profile?.departments?.name ? ` · ${profile.departments.name}` : ''}
+                {/* Naming the scope makes it obvious the assistant answers from a
+                    different slice of data for each role. */}
+                <p className="truncate text-xs text-slate-500">
+                  {ROLE_LABELS[role]} · {SCOPE_NOTE[role]}
+                  {role === 'dept_admin' && profile?.departments?.name
+                    ? ` (${profile.departments.name})`
+                    : ''}
                 </p>
               </div>
               <button
