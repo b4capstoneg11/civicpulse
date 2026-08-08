@@ -2,6 +2,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { ROLE_LABELS } from '../lib/labels'
+import { ThemeToggle } from './ThemeToggle'
 import { Button } from './ui'
 
 const linkBase =
@@ -89,14 +90,20 @@ export function Navbar() {
                 {role ? <span className="text-[11px] text-muted">{ROLE_LABELS[role]}</span> : null}
               </span>
 
+              <ThemeToggle />
+
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 Log Out
               </Button>
             </>
           ) : (
-            <NavLink to="/login" className={navLinkClass}>
-              Login
-            </NavLink>
+            <>
+              <NavLink to="/login" className={navLinkClass}>
+                Login
+              </NavLink>
+              <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-line sm:block" />
+              <ThemeToggle />
+            </>
           )}
         </div>
       </nav>

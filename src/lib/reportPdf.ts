@@ -1,9 +1,10 @@
 import { jsPDF } from 'jspdf'
 import {
   BUCKETS,
-  BUCKET_COLORS,
+  BUCKET_COLORS_DARK,
   BUCKET_COLORS_PRINT,
   BUCKET_LABELS,
+  CHART_CHROME,
   formatDuration,
   type AnalyticsResult,
   type Series,
@@ -25,18 +26,18 @@ async function svgToPng(svg: SVGSVGElement, scale = 2): Promise<{ data: string; 
   clone.setAttribute('width', String(w))
   clone.setAttribute('height', String(h))
 
-  // The app renders dark but the PDF is a white document, so the clone is
-  // re-inked: series colours to their light steps, and the chrome (grid, axis,
-  // labels) from near-white greys to near-black ones. Without this the chart
-  // rasterises pale-on-white and is unreadable in print.
+  // The PDF is always a white document, whichever theme the app is showing, so
+  // the clone is re-inked from the dark steps to the light ones. Keyed on the
+  // dark hexes, this is a no-op when the user is already in light mode — nothing
+  // matches — so one map serves both themes.
   const recolour: Record<string, string> = {
-    [BUCKET_COLORS.open.toLowerCase()]: BUCKET_COLORS_PRINT.open,
-    [BUCKET_COLORS.resolved.toLowerCase()]: BUCKET_COLORS_PRINT.resolved,
-    [BUCKET_COLORS.closed.toLowerCase()]: BUCKET_COLORS_PRINT.closed,
-    '#6f6f6f': '#898781', // muted axis text
-    '#a1a1a1': '#52514e', // secondary labels and values
-    '#1f1f1f': '#e1e0d9', // gridlines
-    '#2f2f2f': '#c3c2b7', // baseline / axis rule
+    [BUCKET_COLORS_DARK.open.toLowerCase()]: BUCKET_COLORS_PRINT.open,
+    [BUCKET_COLORS_DARK.resolved.toLowerCase()]: BUCKET_COLORS_PRINT.resolved,
+    [BUCKET_COLORS_DARK.closed.toLowerCase()]: BUCKET_COLORS_PRINT.closed,
+    [CHART_CHROME.dark.muted]: CHART_CHROME.light.muted,
+    [CHART_CHROME.dark.secondary]: CHART_CHROME.light.secondary,
+    [CHART_CHROME.dark.grid]: CHART_CHROME.light.grid,
+    [CHART_CHROME.dark.axis]: CHART_CHROME.light.axis,
   }
   for (const el of clone.querySelectorAll<SVGElement>('[fill], [stroke]')) {
     for (const attr of ['fill', 'stroke'] as const) {

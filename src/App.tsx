@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { AuthProvider } from './components/AuthProvider'
+import { ThemeProvider } from './components/ThemeProvider'
 import { Navbar } from './components/Navbar'
 import { AssistantDrawer } from './components/AssistantDrawer'
 import { RequireRole } from './components/RequireRole'
@@ -49,6 +50,8 @@ function NotFound() {
 function App() {
   return (
     <BrowserRouter>
+      {/* Theme sits outside auth: a resident who never signs in still gets it. */}
+      <ThemeProvider>
       <AuthProvider>
         <div className="min-h-screen bg-canvas text-ink">
           <a
@@ -115,6 +118,7 @@ function App() {
           </main>
         </div>
       </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

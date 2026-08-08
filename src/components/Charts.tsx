@@ -1,15 +1,27 @@
 import { useId, useState } from 'react'
-import { BUCKETS, BUCKET_COLORS, BUCKET_LABELS, type Bucket, type Series } from '../lib/analytics'
+import { useTheme } from '../hooks/useTheme'
+import {
+  BUCKETS,
+  BUCKET_LABELS,
+  CHART_CHROME,
+  bucketColors,
+  type Bucket,
+  type Series,
+} from '../lib/analytics'
 
-// Chart chrome, stepped for the dark panel. Presentation attributes are inline
-// rather than CSS classes so the SVG can be serialised straight into the PDF
-// export without losing its styling — a class-styled SVG rasterises unpainted.
-const INK_MUTED = '#6f6f6f'
-const INK_SECONDARY = '#a1a1a1'
-const GRID = '#1f1f1f'
-const AXIS = '#2f2f2f'
 const GAP = 2 // gap between touching marks — the surface does the separating
 const MAX_BAR = 24 // never fill the band; the leftover is air
+
+/**
+ * Colours are resolved in JS and written as inline SVG presentation attributes,
+ * not CSS classes — the PDF export serialises these nodes, and anything styled
+ * by class would rasterise unpainted. That is also why the palette has to switch
+ * here rather than via a CSS variable.
+ */
+function usePalette() {
+  const { resolved } = useTheme()
+  return { colors: bucketColors(resolved), chrome: CHART_CHROME[resolved] }
+}
 
 function niceCeil(v: number): number {
   if (v <= 5) return Math.max(1, v)
@@ -18,6 +30,7 @@ function niceCeil(v: number): number {
 }
 
 export function ChartLegend() {
+  const { colors } = usePalette()
   return (
     <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1.5" aria-label="Ticket state legend">
       {BUCKETS.map((b) => (
@@ -25,7 +38,7 @@ export function ChartLegend() {
           <span
             aria-hidden="true"
             className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ background: BUCKET_COLORS[b] }}
+            style={{ background: colors[b] }}
           />
           {BUCKET_LABELS[b]}
         </li>
@@ -72,17 +85,18 @@ function Tooltip({ hover, width }: { hover: Hover; width: number }) {
   )
 }
 
-const hoverRows = (s: Series) =>
+const hoverRows = (s: Series, colors: Record<Bucket, string>) =>
   BUCKETS.filter((b) => s.counts[b] > 0).map((b) => ({
     label: BUCKET_LABELS[b],
     value: s.counts[b],
-    color: BUCKET_COLORS[b],
+    color: colors[b],
   }))
 
 /** Stacked columns over time. Total is labelled on the cap; parts live in the tooltip. */
 export function MonthlyColumns({ data, height = 240 }: { data: Series[]; height?: number }) {
   const [hover, setHover] = useState<Hover | null>(null)
   const titleId = useId()
+  const { colors, chrome } = usePalette()
 
   if (data.length === 0) return <p className="py-8 text-center text-sm text-muted">No tickets yet.</p>
 
@@ -112,13 +126,13 @@ export function MonthlyColumns({ data, height = 240 }: { data: Series[]; height?
           const y = padT + plotH - (t / max) * plotH
           return (
             <g key={t}>
-              <line x1={padL} y1={y} x2={width - padR} y2={y} stroke={GRID} strokeWidth="1" />
+              <line x1={padL} y1={y} x2={width - padR} y2={y} stroke={chrome.grid} strokeWidth="1" />
               <text
                 x={padL - 8}
                 y={y + 3.5}
                 textAnchor="end"
                 fontSize="10"
-                fill={INK_MUTED}
+                fill={chrome.muted}
                 style={{ fontVariantNumeric: 'tabular-nums' }}
               >
                 {Math.round(t)}
@@ -126,7 +140,7 @@ export function MonthlyColumns({ data, height = 240 }: { data: Series[]; height?
             </g>
           )
         })}
-        <line x1={padL} y1={padT + plotH} x2={width - padR} y2={padT + plotH} stroke={AXIS} strokeWidth="1" />
+        <line x1={padL} y1={padT + plotH} x2={width - padR} y2={padT + plotH} stroke={chrome.axis} strokeWidth="1" />
 
         {data.map((d, i) => {
           const cx = padL + band * i + band / 2
@@ -142,7 +156,7 @@ export function MonthlyColumns({ data, height = 240 }: { data: Series[]; height?
                   x: cx,
                   y: e.nativeEvent.offsetY,
                   title: d.label,
-                  rows: [{ label: 'Total', value: d.counts.total, color: INK_SECONDARY }, ...hoverRows(d)],
+                  rows: [{ label: 'Total', value: d.counts.total, color: chrome.secondary }, ...hoverRows(d, colors)],
                 })
               }
               onMouseLeave={() => setHover(null)}
@@ -164,7 +178,7 @@ export function MonthlyColumns({ data, height = 240 }: { data: Series[]; height?
                     width={barW}
                     height={Math.max(1, h - GAP)}
                     rx={top ? 4 : 0}
-                    fill={BUCKET_COLORS[b]}
+                    fill={colors[b]}
                   />
                 )
               })}
@@ -176,14 +190,14 @@ export function MonthlyColumns({ data, height = 240 }: { data: Series[]; height?
                   textAnchor="middle"
                   fontSize="10"
                   fontWeight="600"
-                  fill={INK_SECONDARY}
+                  fill={chrome.secondary}
                   style={{ fontVariantNumeric: 'tabular-nums' }}
                 >
                   {d.counts.total}
                 </text>
               ) : null}
 
-              <text x={cx} y={height - 8} textAnchor="middle" fontSize="10" fill={INK_MUTED}>
+              <text x={cx} y={height - 8} textAnchor="middle" fontSize="10" fill={chrome.muted}>
                 {d.label}
               </text>
             </g>
@@ -199,6 +213,7 @@ export function MonthlyColumns({ data, height = 240 }: { data: Series[]; height?
 export function BreakdownBars({ data, maxRows = 8 }: { data: Series[]; maxRows?: number }) {
   const [hover, setHover] = useState<Hover | null>(null)
   const titleId = useId()
+  const { colors, chrome } = usePalette()
 
   if (data.length === 0) return <p className="py-8 text-center text-sm text-muted">No tickets yet.</p>
 
@@ -230,14 +245,14 @@ export function BreakdownBars({ data, maxRows = 8 }: { data: Series[]; maxRows?:
                   x: e.nativeEvent.offsetX,
                   y,
                   title: r.label,
-                  rows: [{ label: 'Total', value: r.counts.total, color: INK_SECONDARY }, ...hoverRows(r)],
+                  rows: [{ label: 'Total', value: r.counts.total, color: chrome.secondary }, ...hoverRows(r, colors)],
                 })
               }
               onMouseLeave={() => setHover(null)}
             >
               <rect x={0} y={y} width={width} height={rowH} fill="transparent" />
 
-              <text x={labelW - 10} y={y + barH / 2 + 4} textAnchor="end" fontSize="11" fill={INK_SECONDARY}>
+              <text x={labelW - 10} y={y + barH / 2 + 4} textAnchor="end" fontSize="11" fill={chrome.secondary}>
                 {r.label.length > 22 ? `${r.label.slice(0, 21)}…` : r.label}
               </text>
 
@@ -252,7 +267,7 @@ export function BreakdownBars({ data, maxRows = 8 }: { data: Series[]; maxRows?:
                     width={Math.max(1, w - (isLast ? 0 : GAP))}
                     height={barH}
                     rx={isLast ? 4 : 0}
-                    fill={BUCKET_COLORS[b]}
+                    fill={colors[b]}
                   />
                 )
                 cursorX += w
@@ -264,7 +279,7 @@ export function BreakdownBars({ data, maxRows = 8 }: { data: Series[]; maxRows?:
                 y={y + barH / 2 + 4}
                 fontSize="11"
                 fontWeight="600"
-                fill={INK_SECONDARY}
+                fill={chrome.secondary}
                 style={{ fontVariantNumeric: 'tabular-nums' }}
               >
                 {r.counts.total}

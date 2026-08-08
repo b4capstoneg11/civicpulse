@@ -13,26 +13,40 @@ export const BUCKET_LABELS: Record<Bucket, string> = {
 }
 
 /**
- * On-screen steps, selected for the dark panel (#0a0a0a) rather than flipped
- * from the light set — all-pairs CVD ΔE 9.4, normal-vision 20.9, every colour
- * clearing 3:1 against the surface.
+ * Two selected palettes, not one inverted. Each was run through the CVD
+ * validator against its own surface:
+ *   dark  on #0a0a0a — all-pairs CVD ΔE 9.4, normal-vision 20.9, all ≥3:1
+ *   light on #ffffff — all-pairs CVD ΔE 9.2, normal-vision 24.0
+ * Identity is fixed across both: Open is always the warm hue, Resolved green,
+ * Closed blue, so switching theme never repaints meaning.
  */
-export const BUCKET_COLORS: Record<Bucket, string> = {
+export const BUCKET_COLORS_DARK: Record<Bucket, string> = {
   open: '#d95926',
   resolved: '#199e70',
   closed: '#3987e5',
 }
 
-/**
- * The PDF is a white document, so the charts are re-inked with the light steps
- * before rasterising. Without this the dark-surface colours would sit on white
- * at the wrong contrast.
- */
-export const BUCKET_COLORS_PRINT: Record<Bucket, string> = {
+export const BUCKET_COLORS_LIGHT: Record<Bucket, string> = {
   open: '#eb6834',
   resolved: '#1baf7a',
   closed: '#2a78d6',
 }
+
+export function bucketColors(theme: 'light' | 'dark'): Record<Bucket, string> {
+  return theme === 'dark' ? BUCKET_COLORS_DARK : BUCKET_COLORS_LIGHT
+}
+
+/**
+ * The PDF is always a white document regardless of the app's theme, so the
+ * export re-inks charts to these steps before rasterising.
+ */
+export const BUCKET_COLORS_PRINT = BUCKET_COLORS_LIGHT
+
+/** Chart chrome per theme — gridlines, axis rule and label ink. */
+export const CHART_CHROME = {
+  dark: { grid: '#1f1f1f', axis: '#2f2f2f', muted: '#6f6f6f', secondary: '#a1a1a1' },
+  light: { grid: '#e1e0d9', axis: '#c3c2b7', muted: '#898781', secondary: '#52514e' },
+} as const
 
 const STATUS_BUCKET: Record<IssueStatus, Bucket> = {
   created: 'open',

@@ -5,6 +5,31 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CivicPulse</title>
+    <!--
+      Runs before first paint and before the bundle loads, so the stored theme is
+      already stamped on <html> when the first pixels are drawn. Doing this in
+      React instead would show one frame of the wrong theme on every load.
+      Kept deliberately tiny and dependency-free; it must never throw.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('civicpulse-theme')
+          var resolved =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+          document.documentElement.setAttribute('data-theme', resolved)
+          document.documentElement.style.colorScheme = resolved
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark')
+        }
+      })()
+    </script>
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
   </head>
   <body>
     <div id="root"></div>
