@@ -15,6 +15,9 @@ const Board = lazy(() => import('./pages/Board').then((m) => ({ default: m.Board
 const MyWork = lazy(() => import('./pages/MyWork').then((m) => ({ default: m.MyWork })))
 const AdminUsers = lazy(() => import('./pages/AdminUsers').then((m) => ({ default: m.AdminUsers })))
 const AdminRoster = lazy(() => import('./pages/AdminRoster').then((m) => ({ default: m.AdminRoster })))
+// Analytics pulls in the PDF library, so it stays in its own chunk — nobody
+// downloads jsPDF unless they open this page.
+const Analytics = lazy(() => import('./pages/Analytics').then((m) => ({ default: m.Analytics })))
 
 function RouteFallback() {
   return (
@@ -82,6 +85,14 @@ function App() {
                   element={
                     <RequireRole allow={['super_admin', 'dept_admin']}>
                       <AdminUsers />
+                    </RequireRole>
+                  }
+                />
+                <Route
+                  path="/analytics"
+                  element={
+                    <RequireRole allow={['super_admin', 'dept_admin']}>
+                      <Analytics />
                     </RequireRole>
                   }
                 />

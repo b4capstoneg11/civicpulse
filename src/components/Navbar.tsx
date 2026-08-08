@@ -70,6 +70,11 @@ export function Navbar() {
                   Team
                 </NavLink>
               ) : null}
+              {canManageDepartment ? (
+                <NavLink to="/analytics" className={navLinkClass}>
+                  Analytics
+                </NavLink>
+              ) : null}
 
               <span className="ml-1 hidden max-w-[14rem] flex-col items-end truncate text-right sm:flex">
                 <span className="truncate text-sm text-slate-600">
