@@ -19,18 +19,21 @@ export function ThemeToggle() {
     >
       {OPTIONS.map((o) => {
         const active = preference === o.key
+        const label = o.key === 'system' ? `System (${resolved})` : o.label
         return (
+          // Deliberately a native `title` rather than the Radix Tooltip used on
+          // staff pages: this control is in the header every resident loads, and
+          // measuring showed Radix's tooltip adds 26 kB gzipped to that path.
+          // The aria-label is what carries the meaning; `title` is the hover hint.
           <button
             key={o.key}
             type="button"
             role="radio"
             aria-checked={active}
-            // The icon alone is not a label — a screen reader needs the word, and
-            // "System" needs to say which theme that currently resolves to.
             aria-label={
               o.key === 'system' ? `System theme (currently ${resolved})` : `${o.label} theme`
             }
-            title={o.key === 'system' ? `System (${resolved})` : o.label}
+            title={label}
             onClick={() => setPreference(o.key)}
             className={`grid h-6 w-6 place-items-center rounded-md text-[12px] leading-none transition-colors [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 focus-visible:ring-offset-canvas ${
               active

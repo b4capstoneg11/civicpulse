@@ -5,6 +5,7 @@ import { ThemeProvider } from './components/ThemeProvider'
 import { Navbar } from './components/Navbar'
 import { RequireRole } from './components/RequireRole'
 import { Spinner } from './components/ui'
+import { StaffToaster } from './components/StaffToaster'
 import { ReportIssue } from './pages/ReportIssue'
 
 // `/` is the landing route for residents, so it ships in the main bundle.
@@ -54,7 +55,11 @@ function NotFound() {
 function App() {
   return (
     <BrowserRouter>
-      {/* Theme sits outside auth: a resident who never signs in still gets it. */}
+      {/* Theme sits outside auth: a resident who never signs in still gets it.
+          The Toaster lives inside it so toasts follow the active theme.
+          TooltipProvider is deliberately not here — it is scoped to the one
+          lazy page that uses tooltips, to keep Radix's tooltip (26 kB gzipped)
+          off the path residents download. */}
       <ThemeProvider>
       <AuthProvider>
         <div className="min-h-screen bg-canvas text-ink">
@@ -125,6 +130,7 @@ function App() {
             </Suspense>
           </main>
         </div>
+        <StaffToaster />
       </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

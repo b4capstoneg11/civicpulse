@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
-import { Alert, Button, EmptyState, Select, Spinner } from '../components/ui'
+import { Alert, Button, EmptyState } from '../components/ui'
+import { FieldSelect } from '../components/FieldSelect'
+import { AnalyticsSkeleton } from '../components/Skeletons'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BreakdownBars, ChartLegend, MonthlyColumns, SeriesTable } from '../components/Charts'
 import { buildAnalytics, formatCount, formatDuration, type AnalyticsResult } from '../lib/analytics'
 import { buildAnalyticsPdf } from '../lib/reportPdf'
@@ -38,30 +41,34 @@ function ChartCard({
   children: React.ReactNode
   table: React.ReactNode
 }) {
-  const [showTable, setShowTable] = useState(false)
   return (
     <section className="rounded-xl border border-line bg-panel p-5">
-      <div className="mb-1 flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-semibold text-ink">{title}</h2>
-          <p className="text-xs text-subtle">{subtitle}</p>
+      <Tabs defaultValue="chart">
+        <div className="mb-1 flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">{title}</h2>
+            <p className="text-xs text-subtle">{subtitle}</p>
+          </div>
+          <TabsList aria-label={`${title} view`}>
+            <TabsTrigger value="chart">Chart</TabsTrigger>
+            <TabsTrigger value="table">Table</TabsTrigger>
+          </TabsList>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowTable((v) => !v)}
-          aria-expanded={showTable}
-          className="rounded-md px-2 py-1 text-xs font-medium text-brand transition-colors hover:bg-brand-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-        >
-          {showTable ? 'Show chart' : 'Show table'}
-        </button>
-      </div>
 
-      <ChartLegend />
-      {/* The figure keeps its DOM id so the PDF export can find and rasterise the SVG. */}
-      <div id={id} hidden={showTable}>
-        {children}
-      </div>
-      {showTable ? <div className="mt-2">{table}</div> : null}
+        <ChartLegend />
+
+        {/* forceMount matters: the PDF export looks the figure up by DOM id, so
+            the chart has to stay mounted while the table tab is showing. Radix
+            marks it hidden instead of unmounting, which is what the previous
+            hand-rolled toggle did — and the export already falls back to the
+            SVG's viewBox when a hidden node measures zero. */}
+        <TabsContent value="chart" forceMount>
+          <div id={id}>{children}</div>
+        </TabsContent>
+        <TabsContent value="table" className="mt-2">
+          {table}
+        </TabsContent>
+      </Tabs>
     </section>
   )
 }
@@ -200,13 +207,13 @@ export function Analytics() {
           <label htmlFor="range" className="mb-1 block text-xs font-medium text-ink-soft">
             Period
           </label>
-          <Select id="range" value={range} onChange={(e) => setRange(e.target.value)} className="w-44">
-            {RANGES.map((r) => (
-              <option key={r.key} value={r.key}>
-                {r.label}
-              </option>
-            ))}
-          </Select>
+          <FieldSelect
+            id="range"
+            value={range}
+            onValueChange={setRange}
+            className="w-44"
+            options={RANGES.map((r) => ({ value: r.key, label: r.label }))}
+          />
         </div>
 
         {isSuperAdmin ? (
@@ -214,14 +221,16 @@ export function Analytics() {
             <label htmlFor="dept" className="mb-1 block text-xs font-medium text-ink-soft">
               Department
             </label>
-            <Select id="dept" value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="w-56">
-              <option value="">All departments</option>
-              {departments.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </Select>
+            <FieldSelect
+              id="dept"
+              value={deptFilter}
+              onValueChange={setDeptFilter}
+              className="w-56"
+              options={[
+                { value: '', label: 'All departments' },
+                ...departments.map((d) => ({ value: d.id, label: d.name })),
+              ]}
+            />
           </div>
         ) : null}
       </div>
@@ -233,10 +242,7 @@ export function Analytics() {
       ) : null}
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm text-subtle" role="status">
-          <Spinner />
-          Loading analytics…
-        </p>
+        <AnalyticsSkeleton />
       ) : issues.length === 0 ? (
         <EmptyState
           title="No tickets in this period"

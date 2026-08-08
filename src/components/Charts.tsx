@@ -8,6 +8,14 @@ import {
   type Bucket,
   type Series,
 } from '../lib/analytics'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 const GAP = 2 // gap between touching marks — the surface does the separating
 const MAX_BAR = 24 // never fill the band; the leftover is air
@@ -297,29 +305,39 @@ export function BreakdownBars({ data, maxRows = 8 }: { data: Series[]; maxRows?:
 export function SeriesTable({ data, firstColumn }: { data: Series[]; firstColumn: string }) {
   if (data.length === 0) return null
   return (
-    <div className="overflow-x-auto rounded-lg border border-line">
-      <table className="w-full text-[13px]">
-        <thead className="border-b border-line bg-raised text-[11px] uppercase tracking-wider text-subtle">
-          <tr>
-            <th scope="col" className="px-3 py-2 text-left font-medium">{firstColumn}</th>
+    <div className="rounded-lg border border-line">
+      <Table className="text-[13px]">
+        <TableHeader className="bg-raised text-[11px] uppercase tracking-wider text-subtle">
+          <TableRow>
+            <TableHead scope="col" className="px-3 py-2">{firstColumn}</TableHead>
             {BUCKETS.map((b) => (
-              <th key={b} scope="col" className="px-3 py-2 text-right font-medium">{BUCKET_LABELS[b]}</th>
+              <TableHead key={b} scope="col" className="px-3 py-2 text-right">
+                {BUCKET_LABELS[b]}
+              </TableHead>
             ))}
-            <th scope="col" className="px-3 py-2 text-right font-medium">Total</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-line">
+            <TableHead scope="col" className="px-3 py-2 text-right">Total</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {data.map((r) => (
-            <tr key={r.key} className="transition-colors hover:bg-raised/50">
-              <th scope="row" className="px-3 py-2 text-left font-normal text-ink-soft">{r.label}</th>
+            <TableRow key={r.key}>
+              {/* A row header, not a cell — TableHead is the only slot that
+                  renders a <th>, so the scope stays intact. */}
+              <TableHead scope="row" className="px-3 py-2 font-normal text-ink-soft">
+                {r.label}
+              </TableHead>
               {BUCKETS.map((b) => (
-                <td key={b} className="px-3 py-2 text-right tabular-nums text-ink-soft">{r.counts[b]}</td>
+                <TableCell key={b} className="px-3 py-2 text-right tabular-nums text-ink-soft">
+                  {r.counts[b]}
+                </TableCell>
               ))}
-              <td className="px-3 py-2 text-right font-medium tabular-nums text-ink">{r.counts.total}</td>
-            </tr>
+              <TableCell className="px-3 py-2 text-right font-medium tabular-nums text-ink">
+                {r.counts.total}
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }

@@ -5,7 +5,9 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { KanbanColumn } from '../components/KanbanColumn'
 import { IssueDetailModal } from '../components/IssueDetailModal'
-import { Alert, EmptyState, Select, Spinner } from '../components/ui'
+import { Alert, EmptyState } from '../components/ui'
+import { FieldSelect } from '../components/FieldSelect'
+import { BoardSkeleton } from '../components/Skeletons'
 import type { Department, Issue, IssueStatus, Profile } from '../lib/types'
 
 const COLUMNS: IssueStatus[] = ['created', 'assigned', 'in_progress', 'resolved', 'reopened', 'closed']
@@ -200,19 +202,16 @@ export function Board() {
             <label htmlFor="filter-department" className="mb-1 block text-xs font-medium text-ink-soft">
               Department
             </label>
-            <Select
+            <FieldSelect
               id="filter-department"
               value={filterDepartment}
-              onChange={(e) => setFilter('department', e.target.value)}
+              onValueChange={(v) => setFilter('department', v)}
               className="w-48"
-            >
-              <option value="">All departments</option>
-              {departments.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </Select>
+              options={[
+                { value: '', label: 'All departments' },
+                ...departments.map((d) => ({ value: d.id, label: d.name })),
+              ]}
+            />
           </div>
         ) : null}
 
@@ -220,37 +219,35 @@ export function Board() {
           <label htmlFor="filter-assignee" className="mb-1 block text-xs font-medium text-ink-soft">
             Assigned To
           </label>
-          <Select
+          <FieldSelect
             id="filter-assignee"
             value={filterAssignee}
-            onChange={(e) => setFilter('assignee', e.target.value)}
+            onValueChange={(v) => setFilter('assignee', v)}
             className="w-44"
-          >
-            <option value="">Anyone</option>
-            <option value="unassigned">Unassigned</option>
-            {engineers.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.full_name}
-              </option>
-            ))}
-          </Select>
+            options={[
+              { value: '', label: 'Anyone' },
+              { value: 'unassigned', label: 'Unassigned' },
+              ...engineers.map((e) => ({ value: e.id, label: e.full_name })),
+            ]}
+          />
         </div>
 
         <div>
           <label htmlFor="filter-priority" className="mb-1 block text-xs font-medium text-ink-soft">
             Priority
           </label>
-          <Select
+          <FieldSelect
             id="filter-priority"
             value={filterPriority}
-            onChange={(e) => setFilter('priority', e.target.value)}
+            onValueChange={(v) => setFilter('priority', v)}
             className="w-36"
-          >
-            <option value="">All priorities</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </Select>
+            options={[
+              { value: '', label: 'All priorities' },
+              { value: 'high', label: 'High' },
+              { value: 'medium', label: 'Medium' },
+              { value: 'low', label: 'Low' },
+            ]}
+          />
         </div>
 
         <div>
@@ -287,10 +284,7 @@ export function Board() {
       ) : null}
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm text-subtle" role="status">
-          <Spinner />
-          Loading board…
-        </p>
+        <BoardSkeleton />
       ) : issues.length === 0 ? (
         <EmptyState
           title={hasFilters ? 'No tickets match these filters' : 'No tickets yet'}

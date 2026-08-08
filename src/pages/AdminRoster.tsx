@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
-import { Alert, Button, EmptyState, Select, Spinner } from '../components/ui'
+import { Alert, Button, EmptyState } from '../components/ui'
+import { FieldSelect } from '../components/FieldSelect'
+import { ListSkeleton } from '../components/Skeletons'
+// Provided here rather than at the app root: this is the only page using
+// tooltips, and it is lazy-loaded, so residents never download Radix's tooltip.
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { WEEKDAYS, istNow, isOnShiftNow } from '../lib/roster'
 import type { Department, EngineerWorkload, Profile, RosterShift } from '../lib/types'
 
@@ -206,6 +211,7 @@ export function AdminRoster() {
   const { weekday: todayIst } = istNow()
 
   return (
+    <TooltipProvider delayDuration={300}>
     <div className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="mb-1 text-2xl font-semibold text-ink text-balance">Work Roster</h1>
       <p className="mb-8 text-ink-soft text-pretty">
@@ -219,18 +225,13 @@ export function AdminRoster() {
           <label htmlFor="roster-department" className="mb-1.5 block text-sm font-medium text-ink">
             Department
           </label>
-          <Select
+          <FieldSelect
             id="roster-department"
             value={selectedDepartment}
-            onChange={(e) => setSelectedDepartment(e.target.value)}
-          >
-            <option value="">Select a department…</option>
-            {departments.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </Select>
+            onValueChange={setSelectedDepartment}
+            placeholder="Select a department…"
+            options={departments.map((d) => ({ value: d.id, label: d.name }))}
+          />
         </div>
       ) : null}
 
@@ -241,10 +242,7 @@ export function AdminRoster() {
       ) : null}
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm text-subtle" role="status">
-          <Spinner />
-          Loading roster…
-        </p>
+        <ListSkeleton label="Loading roster…" rows={3} />
       ) : !selectedDepartment ? (
         <EmptyState title="Pick a department" description="Choose a department to edit its roster." />
       ) : engineers.length === 0 ? (
@@ -267,20 +265,15 @@ export function AdminRoster() {
                   <label htmlFor="shift-engineer" className="mb-1.5 block text-sm font-medium text-ink">
                     Engineer
                   </label>
-                  <Select
+                  <FieldSelect
                     id="shift-engineer"
                     value={formEngineer}
-                    onChange={(e) => setFormEngineer(e.target.value)}
-                  >
-                    <option value="">Select an engineer…</option>
-                    {engineers
+                    onValueChange={setFormEngineer}
+                    placeholder="Select an engineer…"
+                    options={engineers
                       .filter((e) => e.profile.is_active)
-                      .map((e) => (
-                        <option key={e.profile.id} value={e.profile.id}>
-                          {e.profile.full_name}
-                        </option>
-                      ))}
-                  </Select>
+                      .map((e) => ({ value: e.profile.id, label: e.profile.full_name }))}
+                  />
                 </div>
 
                 <div>
@@ -386,20 +379,35 @@ export function AdminRoster() {
                       const cellKey = `${engineer.profile.id}-${weekday}`
                       return (
                         <td key={day} className="px-2 py-2 text-center">
-                          <button
-                            type="button"
-                            onClick={() => toggleShift(engineer, weekday)}
-                            disabled={savingCell === cellKey}
-                            aria-pressed={Boolean(shift)}
-                            aria-label={`${engineer.profile.full_name}, ${day}`}
-                            className={`h-8 w-full min-w-14 rounded-md border text-xs font-medium transition-colors [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:opacity-50 ${
-                              shift
-                                ? 'border-brand bg-brand text-canvas hover:bg-brand-hi'
-                                : 'border-line bg-panel text-subtle hover:border-line-strong'
-                            }`}
-                          >
-                            {shift ? '✓' : '—'}
-                          </button>
+                          {/* A ✓ says there is a shift but not when it runs.
+                              The tooltip carries the hours, and the aria-label
+                              states them too so the information is not
+                              hover-only. */}
+                          <Tooltip>
+                            <TooltipTrigger
+                              type="button"
+                              onClick={() => toggleShift(engineer, weekday)}
+                              disabled={savingCell === cellKey}
+                              aria-pressed={Boolean(shift)}
+                              aria-label={
+                                shift
+                                  ? `${engineer.profile.full_name}, ${day}, ${shift.start_time}–${shift.end_time}. Click to clear.`
+                                  : `${engineer.profile.full_name}, ${day}, not rostered. Click to add ${DEFAULT_START}–${DEFAULT_END}.`
+                              }
+                              className={`h-8 w-full min-w-14 rounded-md border text-xs font-medium transition-colors [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:opacity-50 ${
+                                shift
+                                  ? 'border-brand bg-brand text-canvas hover:bg-brand-hi'
+                                  : 'border-line bg-panel text-subtle hover:border-line-strong'
+                              }`}
+                            >
+                              {shift ? '✓' : '—'}
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {shift
+                                ? `${shift.start_time}–${shift.end_time} · click to clear`
+                                : `Not rostered · click to add ${DEFAULT_START}–${DEFAULT_END}`}
+                            </TooltipContent>
+                          </Tooltip>
                         </td>
                       )
                     })}
@@ -455,5 +463,6 @@ export function AdminRoster() {
         </>
       )}
     </div>
+    </TooltipProvider>
   )
 }

@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { StatusBadge, PriorityBadge, TicketNumber } from '../components/StatusBadge'
 import { IssueDetailModal } from '../components/IssueDetailModal'
-import { Alert, Button, EmptyState, Spinner } from '../components/ui'
+import { Alert, Button, EmptyState } from '../components/ui'
+import { ListSkeleton } from '../components/Skeletons'
 import { formatRelative, joinParts } from '../lib/format'
 import type { Issue, IssueStatus } from '../lib/types'
 
@@ -160,10 +161,7 @@ export function MyWork() {
       ) : null}
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm text-subtle" role="status">
-          <Spinner />
-          Loading your tickets…
-        </p>
+        <ListSkeleton label="Loading your tickets…" rows={3} />
       ) : (
         <div className="space-y-8">
           <section>

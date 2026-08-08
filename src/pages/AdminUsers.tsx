@@ -2,7 +2,18 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { readFunctionError } from '../lib/functionError'
 import { useAuth } from '../hooks/useAuth'
-import { Alert, Button, EmptyState, Field, Input, Select, Spinner } from '../components/ui'
+import { toast } from 'sonner'
+import { Alert, Button, EmptyState, Field, Input } from '../components/ui'
+import { FieldSelect } from '../components/FieldSelect'
+import { ListSkeleton } from '../components/Skeletons'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { formatDate } from '../lib/format'
 import type { Department, Profile, Role } from '../lib/types'
 
@@ -35,7 +46,6 @@ export function AdminUsers() {
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
 
   // A super admin creates staff admins; a staff admin creates field engineers.
   const creatableRole: Role = isSuperAdmin ? 'dept_admin' : 'field_engineer'
@@ -75,7 +85,16 @@ export function AdminUsers() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    setNotice(null)
+
+    // Both staff roles need a department (profiles_department_required enforces
+    // it in Postgres). The department picker is no longer a native <select>, so
+    // it cannot carry `required` — this keeps the check client-side instead of
+    // making the user wait for the edge function to reject it.
+    if (!newDepartment) {
+      setError('Pick a department for this user.')
+      return
+    }
+
     setSubmitting(true)
 
     // User creation needs the service-role key, so it runs in an edge function
@@ -100,7 +119,7 @@ export function AdminUsers() {
       return
     }
 
-    setNotice(`${fullName.trim()} can now sign in with ${email.trim()}.`)
+    toast.success(`${fullName.trim()} can now sign in with ${email.trim()}.`)
     setFullName('')
     setEmail('')
     setPassword('')
@@ -110,7 +129,6 @@ export function AdminUsers() {
 
   async function toggleActive(user: Profile) {
     setError(null)
-    setNotice(null)
 
     const { data, error: fnError } = await supabase.functions.invoke<{ error?: string }>('manage-users', {
       body: { action: 'set_active', user_id: user.id, is_active: !user.is_active },
@@ -121,7 +139,7 @@ export function AdminUsers() {
       setError(message)
       return
     }
-    setNotice(`${user.full_name} was ${user.is_active ? 'deactivated' : 'reactivated'}.`)
+    toast.success(`${user.full_name} was ${user.is_active ? 'deactivated' : 'reactivated'}.`)
     load()
   }
 
@@ -214,29 +232,28 @@ export function AdminUsers() {
                   <label htmlFor="new-role" className="mb-1.5 block text-sm font-medium text-ink">
                     Role
                   </label>
-                  <Select id="new-role" value={newRole} onChange={(e) => setNewRole(e.target.value as Role)}>
-                    <option value="dept_admin">Staff Admin</option>
-                    <option value="field_engineer">Field Engineer</option>
-                  </Select>
+                  <FieldSelect
+                    id="new-role"
+                    value={newRole}
+                    onValueChange={(v) => setNewRole(v as Role)}
+                    options={[
+                      { value: 'dept_admin', label: 'Staff Admin' },
+                      { value: 'field_engineer', label: 'Field Engineer' },
+                    ]}
+                  />
                 </div>
 
                 <div>
                   <label htmlFor="new-department" className="mb-1.5 block text-sm font-medium text-ink">
                     Department
                   </label>
-                  <Select
+                  <FieldSelect
                     id="new-department"
-                    required
                     value={newDepartment}
-                    onChange={(e) => setNewDepartment(e.target.value)}
-                  >
-                    <option value="">Select a department…</option>
-                    {departments.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </Select>
+                    onValueChange={setNewDepartment}
+                    placeholder="Select a department…"
+                    options={departments.map((d) => ({ value: d.id, label: d.name }))}
+                  />
                 </div>
               </>
             ) : (
@@ -249,8 +266,8 @@ export function AdminUsers() {
             )}
           </div>
 
+          {/* Successes toast; errors stay inline beside the form that failed. */}
           {error ? <Alert tone="error">{error}</Alert> : null}
-          {notice ? <Alert tone="success">{notice}</Alert> : null}
 
           <Button type="submit" loading={submitting}>
             {submitting ? 'Creating…' : `Create ${ROLE_LABELS[newRole]}`}
@@ -264,48 +281,49 @@ export function AdminUsers() {
         </h2>
 
         {loading ? (
-          <p className="flex items-center gap-2 text-sm text-subtle" role="status">
-            <Spinner />
-            Loading…
-          </p>
+          <ListSkeleton label="Loading staff…" rows={4} />
         ) : visibleUsers.length === 0 ? (
           <EmptyState
             title="No staff yet"
             description="Anyone you create above will appear here."
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-line bg-panel">
-            <table className="w-full text-sm">
-              <thead className="border-b border-line bg-raised text-left text-xs uppercase tracking-wide text-subtle">
-                <tr>
-                  <th scope="col" className="px-4 py-2.5 font-medium">Name</th>
-                  <th scope="col" className="px-4 py-2.5 font-medium">Role</th>
-                  <th scope="col" className="px-4 py-2.5 font-medium">Department</th>
-                  <th scope="col" className="px-4 py-2.5 font-medium">Added</th>
-                  <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
-                  <th scope="col" className="px-4 py-2.5 text-right font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
+          // shadcn's Table brings its own scroll container; the padding classes
+          // keep the row density this page was designed at.
+          <div className="rounded-xl border border-line bg-panel">
+            <Table>
+              <TableHeader className="bg-raised text-xs uppercase tracking-wide text-subtle">
+                <TableRow>
+                  <TableHead className="px-4 py-2.5">Name</TableHead>
+                  <TableHead className="px-4 py-2.5">Role</TableHead>
+                  <TableHead className="px-4 py-2.5">Department</TableHead>
+                  <TableHead className="px-4 py-2.5">Added</TableHead>
+                  <TableHead className="px-4 py-2.5">Status</TableHead>
+                  <TableHead className="px-4 py-2.5 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {visibleUsers.map((user) => (
-                  <tr key={user.id} className={user.is_active ? '' : 'bg-raised text-subtle'}>
-                    <td className="px-4 py-3">
+                  <TableRow key={user.id} className={user.is_active ? '' : 'bg-raised text-subtle'}>
+                    <TableCell className="px-4 py-3">
                       <span className="font-medium text-ink">{user.full_name}</span>
                       {user.phone ? <p className="text-xs text-subtle">{user.phone}</p> : null}
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
                       <RoleBadge role={user.role} />
-                    </td>
-                    <td className="px-4 py-3 text-ink-soft">{user.departments?.name ?? '—'}</td>
-                    <td className="px-4 py-3 tabular-nums text-subtle">{formatDate(user.created_at)}</td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-ink-soft">{user.departments?.name ?? '—'}</TableCell>
+                    <TableCell className="px-4 py-3 tabular-nums text-subtle">
+                      {formatDate(user.created_at)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
                       {user.is_active ? (
                         <span className="text-ok">Active</span>
                       ) : (
                         <span className="text-subtle">Deactivated</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right">
                       {user.id === profile?.id ? (
                         <span className="text-xs text-subtle">You</span>
                       ) : (
@@ -313,11 +331,11 @@ export function AdminUsers() {
                           {user.is_active ? 'Deactivate' : 'Reactivate'}
                         </Button>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </section>

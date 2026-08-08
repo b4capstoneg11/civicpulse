@@ -9,7 +9,9 @@ import {
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { StatusBadge, PriorityBadge, TicketNumber } from './StatusBadge'
-import { Alert, Button, Field, Select, Textarea } from './ui'
+import { toast } from 'sonner'
+import { Alert, Button, Field, Textarea } from './ui'
+import { FieldSelect } from './FieldSelect'
 import { formatDateTime, joinParts } from '../lib/format'
 import { STATUS_LABELS } from '../lib/labels'
 import { isOnShiftNow, shiftSummary } from '../lib/roster'
@@ -62,7 +64,6 @@ export function IssueDetailModal({
   const [submitting, setSubmitting] = useState(false)
   const [savingChange, setSavingChange] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
 
 
   useEffect(() => {
@@ -173,7 +174,6 @@ export function IssueDetailModal({
     if (next === issue.status) return
     setSavingChange(true)
     setError(null)
-    setNotice(null)
 
     // return=representation so a row count of zero — an RLS block, which
     // PostgREST reports as a success — is caught rather than assumed to work.
@@ -197,14 +197,13 @@ export function IssueDetailModal({
     })
 
     setSavingChange(false)
-    setNotice(`Status changed to ${STATUS_LABELS[next]}.`)
+    toast.success(`Status changed to ${STATUS_LABELS[next]}.`)
     onUpdated()
   }
 
   async function reassign(engineerId: string) {
     setSavingChange(true)
     setError(null)
-    setNotice(null)
 
     const { data, error: updateError } = await supabase
       .from('issues')
@@ -229,7 +228,7 @@ export function IssueDetailModal({
     })
 
     setSavingChange(false)
-    setNotice(engineerId ? `Reassigned to ${name}.` : 'Returned to the queue.')
+    toast.success(engineerId ? `Reassigned to ${name}.` : 'Returned to the queue.')
     onUpdated()
   }
 
@@ -360,23 +359,20 @@ export function IssueDetailModal({
                 <label htmlFor="change-status" className="mb-1.5 block text-sm font-medium text-ink">
                   Status
                 </label>
-                <Select
+                <FieldSelect
                   id="change-status"
                   value={issue.status}
                   disabled={savingChange}
-                  onChange={(e) => changeStatus(e.target.value as IssueStatus)}
-                >
-                  {/* Keep the current status selectable even when it is not an
-                      option the caller may set, so the control reflects reality. */}
-                  {!statusOptions.includes(issue.status) ? (
-                    <option value={issue.status}>{STATUS_LABELS[issue.status]}</option>
-                  ) : null}
-                  {statusOptions.map((s) => (
-                    <option key={s} value={s}>
-                      {STATUS_LABELS[s]}
-                    </option>
-                  ))}
-                </Select>
+                  onValueChange={(v) => changeStatus(v as IssueStatus)}
+                  options={[
+                    // Keep the current status selectable even when it is not an
+                    // option the caller may set, so the control reflects reality.
+                    ...(statusOptions.includes(issue.status)
+                      ? []
+                      : [{ value: issue.status, label: STATUS_LABELS[issue.status] }]),
+                    ...statusOptions.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
+                  ]}
+                />
               </div>
 
               {canManageDepartment ? (
@@ -384,45 +380,31 @@ export function IssueDetailModal({
                   <label htmlFor="change-assignee" className="mb-1.5 block text-sm font-medium text-ink">
                     Assigned To
                   </label>
-                  <Select
+                  <FieldSelect
                     id="change-assignee"
                     value={issue.assigned_to ?? ''}
                     disabled={savingChange}
-                    onChange={(e) => reassign(e.target.value)}
-                  >
-                    <option value="">Unassigned — return to queue</option>
-
-                    {/* On-shift engineers first: they are the ones who can act now. */}
-                    {onShiftEngineers.length > 0 ? (
-                      <optgroup label="Field Engineers — on shift now">
-                        {onShiftEngineers.map((c) => (
-                          <option key={c.profile.id} value={c.profile.id}>
-                            {c.profile.full_name} — {availabilityLabel(c)}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ) : null}
-
-                    {offShiftEngineers.length > 0 ? (
-                      <optgroup label="Field Engineers — off shift">
-                        {offShiftEngineers.map((c) => (
-                          <option key={c.profile.id} value={c.profile.id}>
-                            {c.profile.full_name} — {availabilityLabel(c)}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ) : null}
-
-                    {admins.length > 0 ? (
-                      <optgroup label="Staff Admins">
-                        {admins.map((c) => (
-                          <option key={c.profile.id} value={c.profile.id}>
-                            {c.profile.full_name} — {availabilityLabel(c)}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ) : null}
-                  </Select>
+                    onValueChange={reassign}
+                    options={[
+                      { value: '', label: 'Unassigned — return to queue' },
+                      // On-shift engineers first: they can act now.
+                      ...onShiftEngineers.map((c) => ({
+                        value: c.profile.id,
+                        label: `${c.profile.full_name} — ${availabilityLabel(c)}`,
+                        group: 'Field Engineers — on shift now',
+                      })),
+                      ...offShiftEngineers.map((c) => ({
+                        value: c.profile.id,
+                        label: `${c.profile.full_name} — ${availabilityLabel(c)}`,
+                        group: 'Field Engineers — off shift',
+                      })),
+                      ...admins.map((c) => ({
+                        value: c.profile.id,
+                        label: `${c.profile.full_name} — ${availabilityLabel(c)}`,
+                        group: 'Staff Admins',
+                      })),
+                    ]}
+                  />
                   {candidatesLoading ? (
                     <p className="mt-1.5 text-xs text-subtle">Loading available staff…</p>
                   ) : candidates.length === 0 ? (
@@ -440,11 +422,9 @@ export function IssueDetailModal({
                 : 'Marking this ticket resolved requires a proof photo and description below.'}
             </p>
 
-            {notice ? (
-              <div className="mt-3">
-                <Alert tone="success">{notice}</Alert>
-              </div>
-            ) : null}
+            {/* Successes are toasts: they confirm and get out of the way, and
+                they survive the modal closing. Errors stay inline, next to the
+                control that failed. */}
             {error && !canResolve ? (
               <div className="mt-3">
                 <Alert tone="error">{error}</Alert>
