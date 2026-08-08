@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { AuthProvider } from './components/AuthProvider'
 import { Navbar } from './components/Navbar'
+import { AssistantDrawer } from './components/AssistantDrawer'
 import { RequireRole } from './components/RequireRole'
 import { Spinner } from './components/ui'
 import { ReportIssue } from './pages/ReportIssue'
@@ -57,6 +58,9 @@ function App() {
             Skip to Main Content
           </a>
           <Navbar />
+          {/* Mounted once, outside the routes, so the conversation survives
+              navigation and closing the drawer. Renders nothing for residents. */}
+          <AssistantDrawer />
           <main id="main">
             <Suspense fallback={<RouteFallback />}>
               <Routes>
