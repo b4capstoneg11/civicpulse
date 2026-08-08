@@ -1,13 +1,14 @@
 import { useId, useState } from 'react'
 import { BUCKETS, BUCKET_COLORS, BUCKET_LABELS, type Bucket, type Series } from '../lib/analytics'
 
-// Chart chrome. Presentation attributes are inline rather than CSS classes so the
-// SVG can be serialised straight into the PDF export without losing its styling.
-const INK_MUTED = '#898781'
-const INK_SECONDARY = '#52514e'
-const GRID = '#e1e0d9'
-const AXIS = '#c3c2b7'
-const GAP = 2 // surface gap between touching marks — white does the separating
+// Chart chrome, stepped for the dark panel. Presentation attributes are inline
+// rather than CSS classes so the SVG can be serialised straight into the PDF
+// export without losing its styling — a class-styled SVG rasterises unpainted.
+const INK_MUTED = '#6f6f6f'
+const INK_SECONDARY = '#a1a1a1'
+const GRID = '#1f1f1f'
+const AXIS = '#2f2f2f'
+const GAP = 2 // gap between touching marks — the surface does the separating
 const MAX_BAR = 24 // never fill the band; the leftover is air
 
 function niceCeil(v: number): number {
@@ -20,7 +21,7 @@ export function ChartLegend() {
   return (
     <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1.5" aria-label="Ticket state legend">
       {BUCKETS.map((b) => (
-        <li key={b} className="flex items-center gap-1.5 text-xs text-slate-600">
+        <li key={b} className="flex items-center gap-1.5 text-[11px] text-ink-soft">
           <span
             aria-hidden="true"
             className="inline-block h-2.5 w-2.5 rounded-full"
@@ -46,16 +47,16 @@ function Tooltip({ hover, width }: { hover: Hover; width: number }) {
   return (
     <div
       role="tooltip"
-      className="pointer-events-none absolute z-10 min-w-36 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg"
+      className="pointer-events-none absolute z-10 min-w-36 rounded-lg border border-line-strong bg-raised px-3 py-2 text-xs shadow-2xl shadow-black/60"
       style={{
         left: flip ? undefined : hover.x + 12,
         right: flip ? width - hover.x + 12 : undefined,
         top: Math.max(0, hover.y - 12),
       }}
     >
-      <p className="mb-1 font-medium text-slate-800">{hover.title}</p>
+      <p className="mb-1 font-medium text-ink">{hover.title}</p>
       {hover.rows.map((r) => (
-        <p key={r.label} className="flex items-center justify-between gap-3 text-slate-600">
+        <p key={r.label} className="flex items-center justify-between gap-3 text-ink-soft">
           <span className="flex items-center gap-1.5">
             <span
               aria-hidden="true"
@@ -64,7 +65,7 @@ function Tooltip({ hover, width }: { hover: Hover; width: number }) {
             />
             {r.label}
           </span>
-          <span className="tabular-nums font-medium text-slate-800">{r.value}</span>
+          <span className="tabular-nums font-medium text-ink">{r.value}</span>
         </p>
       ))}
     </div>
@@ -83,7 +84,7 @@ export function MonthlyColumns({ data, height = 240 }: { data: Series[]; height?
   const [hover, setHover] = useState<Hover | null>(null)
   const titleId = useId()
 
-  if (data.length === 0) return <p className="py-8 text-center text-sm text-slate-400">No tickets yet.</p>
+  if (data.length === 0) return <p className="py-8 text-center text-sm text-muted">No tickets yet.</p>
 
   const padL = 34
   const padR = 8
@@ -199,7 +200,7 @@ export function BreakdownBars({ data, maxRows = 8 }: { data: Series[]; maxRows?:
   const [hover, setHover] = useState<Hover | null>(null)
   const titleId = useId()
 
-  if (data.length === 0) return <p className="py-8 text-center text-sm text-slate-400">No tickets yet.</p>
+  if (data.length === 0) return <p className="py-8 text-center text-sm text-muted">No tickets yet.</p>
 
   const rows = data.slice(0, maxRows)
   const labelW = 148
@@ -281,9 +282,9 @@ export function BreakdownBars({ data, maxRows = 8 }: { data: Series[]; maxRows?:
 export function SeriesTable({ data, firstColumn }: { data: Series[]; firstColumn: string }) {
   if (data.length === 0) return null
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200">
-      <table className="w-full text-sm">
-        <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+    <div className="overflow-x-auto rounded-lg border border-line">
+      <table className="w-full text-[13px]">
+        <thead className="border-b border-line bg-raised text-[11px] uppercase tracking-wider text-muted">
           <tr>
             <th scope="col" className="px-3 py-2 text-left font-medium">{firstColumn}</th>
             {BUCKETS.map((b) => (
@@ -292,14 +293,14 @@ export function SeriesTable({ data, firstColumn }: { data: Series[]; firstColumn
             <th scope="col" className="px-3 py-2 text-right font-medium">Total</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-line">
           {data.map((r) => (
-            <tr key={r.key}>
-              <th scope="row" className="px-3 py-1.5 text-left font-normal text-slate-700">{r.label}</th>
+            <tr key={r.key} className="transition-colors hover:bg-raised/50">
+              <th scope="row" className="px-3 py-2 text-left font-normal text-ink-soft">{r.label}</th>
               {BUCKETS.map((b) => (
-                <td key={b} className="px-3 py-1.5 text-right tabular-nums text-slate-600">{r.counts[b]}</td>
+                <td key={b} className="px-3 py-2 text-right tabular-nums text-ink-soft">{r.counts[b]}</td>
               ))}
-              <td className="px-3 py-1.5 text-right font-medium tabular-nums text-slate-800">{r.counts.total}</td>
+              <td className="px-3 py-2 text-right font-medium tabular-nums text-ink">{r.counts.total}</td>
             </tr>
           ))}
         </tbody>

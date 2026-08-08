@@ -1,23 +1,26 @@
 import { useId } from 'react'
 import type { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes } from 'react'
 
-// Shared primitives. Every interactive element gets a visible focus-visible ring and
-// touch-action:manipulation here, so individual screens can't forget them.
+// Shared primitives. Every interactive element gets a visible focus-visible ring
+// and touch-action:manipulation here, so individual screens can't forget them.
 
 const FOCUS_RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white'
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
 
 const VARIANTS = {
-  primary: 'bg-teal-600 text-white hover:bg-teal-700 active:bg-teal-800 shadow-sm',
-  success: 'bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 shadow-sm',
-  secondary: 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:border-slate-400',
-  ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+  // A near-white primary is the SaaS-dashboard convention on near-black: it
+  // outranks any accent fill without shouting.
+  primary: 'bg-ink text-canvas hover:bg-panel active:bg-ink/90 font-medium',
+  accent: 'bg-accent text-canvas hover:bg-accent-hi active:bg-accent-dim font-medium',
+  success: 'bg-ok text-canvas hover:brightness-110 active:brightness-95 font-medium',
+  secondary: 'bg-raised text-ink border border-line hover:bg-hover hover:border-line-strong',
+  ghost: 'text-ink-soft hover:bg-raised hover:text-ink',
 } as const
 
 const SIZES = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-5 py-2.5 text-base',
+  sm: 'h-8 px-3 text-[13px]',
+  md: 'h-9 px-3.5 text-sm',
+  lg: 'h-11 px-5 text-sm',
 } as const
 
 export function Button({
@@ -37,7 +40,7 @@ export function Button({
     <button
       // Only `disabled` while the request is in flight — never pre-emptively on invalid input.
       disabled={disabled ?? loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors duration-150 [touch-action:manipulation] disabled:cursor-not-allowed disabled:opacity-60 ${VARIANTS[variant]} ${SIZES[size]} ${FOCUS_RING} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-lg transition-all duration-150 [touch-action:manipulation] disabled:cursor-not-allowed disabled:opacity-45 ${VARIANTS[variant]} ${SIZES[size]} ${FOCUS_RING} ${className}`}
       {...rest}
     >
       {loading ? <Spinner /> : null}
@@ -49,18 +52,29 @@ export function Button({
 export function Spinner({ className = '' }: { className?: string }) {
   return (
     <svg
-      className={`h-4 w-4 shrink-0 animate-spin ${className}`}
+      className={`h-3.5 w-3.5 shrink-0 animate-spin ${className}`}
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
     >
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path
-        className="opacity-90"
-        fill="currentColor"
-        d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
-      />
+      <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z" />
     </svg>
+  )
+}
+
+/** A panel — the standard content container. */
+export function Card({
+  children,
+  className = '',
+  as: Tag = 'section',
+}: {
+  children: ReactNode
+  className?: string
+  as?: 'section' | 'div' | 'article'
+}) {
+  return (
+    <Tag className={`rounded-xl border border-line bg-panel ${className}`}>{children}</Tag>
   )
 }
 
@@ -85,12 +99,12 @@ export function Field({
 
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-slate-800">
+      <label htmlFor={id} className="mb-1.5 block text-[13px] font-medium text-ink">
         {label}
-        {required ? null : <span className="ml-1.5 font-normal text-slate-400">(optional)</span>}
+        {required ? null : <span className="ml-1.5 font-normal text-muted">(optional)</span>}
       </label>
       {hint ? (
-        <p id={hintId} className="mb-1.5 text-xs text-slate-500">
+        <p id={hintId} className="mb-1.5 text-xs text-muted">
           {hint}
         </p>
       ) : null}
@@ -100,7 +114,7 @@ export function Field({
         'aria-invalid': error ? true : undefined,
       })}
       {error ? (
-        <p id={errorId} className="mt-1.5 text-sm text-red-600">
+        <p id={errorId} className="mt-1.5 text-[13px] text-danger">
           {error}
         </p>
       ) : null}
@@ -109,21 +123,31 @@ export function Field({
 }
 
 const CONTROL =
-  'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors hover:border-slate-400 aria-[invalid=true]:border-red-400'
+  'w-full rounded-lg border border-line bg-raised px-3 text-sm text-ink placeholder:text-muted transition-colors hover:border-line-strong aria-[invalid=true]:border-danger'
 
 export function Input({ className = '', ...rest }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={`${CONTROL} ${FOCUS_RING} ${className}`} {...rest} />
+  return <input className={`${CONTROL} h-9 ${FOCUS_RING} ${className}`} {...rest} />
 }
 
 export function Textarea({ className = '', ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={`${CONTROL} resize-y ${FOCUS_RING} ${className}`} {...rest} />
+  return <textarea className={`${CONTROL} resize-y py-2 ${FOCUS_RING} ${className}`} {...rest} />
 }
 
-// Native selects need explicit background/color or they inherit the OS dark theme
-// and render dark-on-dark.
+/**
+ * Native selects need an explicit background and text colour, and the default
+ * arrow is a black glyph that disappears on a dark field — hence the inline SVG
+ * chevron and appearance-none.
+ */
 export function Select({ className = '', children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={`${CONTROL} [color-scheme:light] ${FOCUS_RING} ${className}`} {...rest}>
+    <select
+      className={`${CONTROL} h-9 cursor-pointer appearance-none bg-[length:14px] bg-[right_0.6rem_center] bg-no-repeat pr-9 ${FOCUS_RING} ${className}`}
+      style={{
+        backgroundImage:
+          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%236f6f6f' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E\")",
+      }}
+      {...rest}
+    >
       {children}
     </select>
   )
@@ -132,15 +156,15 @@ export function Select({ className = '', children, ...rest }: SelectHTMLAttribut
 /** Async status message. `aria-live` so screen readers announce it when it appears. */
 export function Alert({ tone, children }: { tone: 'error' | 'info' | 'success'; children: ReactNode }) {
   const tones = {
-    error: 'border-red-200 bg-red-50 text-red-800',
-    info: 'border-sky-200 bg-sky-50 text-sky-800',
-    success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    error: 'border-danger/30 bg-danger-wash text-danger',
+    info: 'border-info/30 bg-info-wash text-info',
+    success: 'border-ok/30 bg-ok-wash text-ok',
   }
   return (
     <p
       role={tone === 'error' ? 'alert' : 'status'}
       aria-live="polite"
-      className={`rounded-lg border px-3 py-2 text-sm ${tones[tone]}`}
+      className={`rounded-lg border px-3 py-2 text-[13px] ${tones[tone]}`}
     >
       {children}
     </p>
@@ -149,9 +173,30 @@ export function Alert({ tone, children }: { tone: 'error' | 'info' | 'success'; 
 
 export function EmptyState({ title, description }: { title: string; description?: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-slate-300 px-6 py-10 text-center">
-      <p className="text-sm font-medium text-slate-700 text-pretty">{title}</p>
-      {description ? <p className="mt-1 text-sm text-slate-500 text-pretty">{description}</p> : null}
+    <div className="rounded-xl border border-dashed border-line px-6 py-12 text-center">
+      <p className="text-sm font-medium text-ink text-pretty">{title}</p>
+      {description ? <p className="mt-1.5 text-[13px] text-muted text-pretty">{description}</p> : null}
+    </div>
+  )
+}
+
+/** Page heading block, so every screen leads the same way. */
+export function PageHeader({
+  title,
+  subtitle,
+  actions,
+}: {
+  title: string
+  subtitle?: string
+  actions?: ReactNode
+}) {
+  return (
+    <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <h1 className="text-[22px] font-semibold tracking-[-0.01em] text-ink text-balance">{title}</h1>
+        {subtitle ? <p className="mt-1 text-[13px] text-ink-soft text-pretty">{subtitle}</p> : null}
+      </div>
+      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </div>
   )
 }

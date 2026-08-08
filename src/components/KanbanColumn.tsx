@@ -16,11 +16,11 @@ function KanbanColumnImpl({
   return (
     <section
       aria-label={`${STATUS_LABELS[status]} (${issues.length})`}
-      className="flex w-72 shrink-0 flex-col rounded-xl bg-slate-100 p-3"
+      className="flex w-72 shrink-0 flex-col rounded-xl bg-raised p-3"
     >
       <div className="mb-2 flex items-center justify-between gap-2 px-1">
-        <h2 className="text-sm font-semibold text-slate-700">{STATUS_LABELS[status]}</h2>
-        <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-600">
+        <h2 className="text-sm font-semibold text-ink-soft">{STATUS_LABELS[status]}</h2>
+        <span className="rounded-full bg-raised px-2 py-0.5 text-xs font-medium tabular-nums text-ink-soft">
           {issues.length}
         </span>
       </div>
@@ -31,11 +31,11 @@ function KanbanColumnImpl({
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={`min-h-24 flex-1 rounded-lg transition-colors ${
-              snapshot.isDraggingOver ? 'bg-teal-50 ring-2 ring-inset ring-teal-200' : ''
+              snapshot.isDraggingOver ? 'bg-accent-wash ring-2 ring-inset ring-accent/40' : ''
             }`}
           >
             {issues.length === 0 && !snapshot.isDraggingOver ? (
-              <p className="px-2 py-6 text-center text-xs text-slate-400">No tickets</p>
+              <p className="px-2 py-6 text-center text-xs text-muted">No tickets</p>
             ) : null}
             {issues.map((issue, index) => (
               <IssueCard key={issue.id} issue={issue} index={index} onSelect={onSelect} />

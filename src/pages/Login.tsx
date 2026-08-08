@@ -50,8 +50,8 @@ export function Login() {
 
   return (
     <div className="mx-auto max-w-sm px-4 py-16">
-      <h1 className="mb-1 text-2xl font-semibold text-slate-900 text-balance">Login</h1>
-      <p className="mb-8 text-sm text-slate-600 text-pretty">
+      <h1 className="mb-1 text-2xl font-semibold text-ink text-balance">Login</h1>
+      <p className="mb-8 text-sm text-ink-soft text-pretty">
         Sign in and we’ll take you to the right place — your role is read from your account, so there’s
         nothing to choose here. Accounts are provisioned by an administrator.
       </p>

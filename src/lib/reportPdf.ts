@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf'
 import {
   BUCKETS,
   BUCKET_COLORS,
+  BUCKET_COLORS_PRINT,
   BUCKET_LABELS,
   formatDuration,
   type AnalyticsResult,
@@ -23,6 +24,26 @@ async function svgToPng(svg: SVGSVGElement, scale = 2): Promise<{ data: string; 
   clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
   clone.setAttribute('width', String(w))
   clone.setAttribute('height', String(h))
+
+  // The app renders dark but the PDF is a white document, so the clone is
+  // re-inked: series colours to their light steps, and the chrome (grid, axis,
+  // labels) from near-white greys to near-black ones. Without this the chart
+  // rasterises pale-on-white and is unreadable in print.
+  const recolour: Record<string, string> = {
+    [BUCKET_COLORS.open.toLowerCase()]: BUCKET_COLORS_PRINT.open,
+    [BUCKET_COLORS.resolved.toLowerCase()]: BUCKET_COLORS_PRINT.resolved,
+    [BUCKET_COLORS.closed.toLowerCase()]: BUCKET_COLORS_PRINT.closed,
+    '#6f6f6f': '#898781', // muted axis text
+    '#a1a1a1': '#52514e', // secondary labels and values
+    '#1f1f1f': '#e1e0d9', // gridlines
+    '#2f2f2f': '#c3c2b7', // baseline / axis rule
+  }
+  for (const el of clone.querySelectorAll<SVGElement>('[fill], [stroke]')) {
+    for (const attr of ['fill', 'stroke'] as const) {
+      const v = el.getAttribute(attr)?.toLowerCase()
+      if (v && recolour[v]) el.setAttribute(attr, recolour[v])
+    }
+  }
 
   const source = new XMLSerializer().serializeToString(clone)
   const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(source)}`
@@ -156,7 +177,8 @@ export async function buildAnalyticsPdf(result: AnalyticsResult, meta: ReportMet
     pdf.setFontSize(8)
     let lx = margin
     for (const b of BUCKETS) {
-      const [r, g, bl] = hexToRgb(BUCKET_COLORS[b])
+      // Print steps, to match the re-inked chart above.
+      const [r, g, bl] = hexToRgb(BUCKET_COLORS_PRINT[b])
       pdf.setFillColor(r, g, bl)
       pdf.circle(lx + 3, y - 3, 3, 'F')
       pdf.setTextColor(...MUTED)

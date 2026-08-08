@@ -16,11 +16,11 @@ const RANGES = [
 
 function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+    <div className="rounded-xl border border-line bg-panel px-4 py-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted">{label}</p>
       {/* Proportional figures deliberately: tabular-nums makes display sizes look loose. */}
-      <p className="mt-1 text-2xl font-semibold text-slate-900">{value}</p>
-      {hint ? <p className="mt-0.5 text-xs text-slate-500">{hint}</p> : null}
+      <p className="mt-1 text-2xl font-semibold text-ink">{value}</p>
+      {hint ? <p className="mt-0.5 text-xs text-muted">{hint}</p> : null}
     </div>
   )
 }
@@ -40,17 +40,17 @@ function ChartCard({
 }) {
   const [showTable, setShowTable] = useState(false)
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
+    <section className="rounded-xl border border-line bg-panel p-5">
       <div className="mb-1 flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
-          <p className="text-xs text-slate-500">{subtitle}</p>
+          <h2 className="text-sm font-semibold text-ink">{title}</h2>
+          <p className="text-xs text-muted">{subtitle}</p>
         </div>
         <button
           type="button"
           onClick={() => setShowTable((v) => !v)}
           aria-expanded={showTable}
-          className="rounded-md px-2 py-1 text-xs font-medium text-teal-700 transition-colors hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+          className="rounded-md px-2 py-1 text-xs font-medium text-accent transition-colors hover:bg-accent-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {showTable ? 'Show chart' : 'Show table'}
         </button>
@@ -186,8 +186,8 @@ export function Analytics() {
     <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 text-balance">Analytics</h1>
-          <p className="text-sm text-slate-600">{scopeLabel}</p>
+          <h1 className="text-2xl font-semibold text-ink text-balance">Analytics</h1>
+          <p className="text-sm text-ink-soft">{scopeLabel}</p>
         </div>
         <Button onClick={handleExport} loading={exporting} disabled={loading || issues.length === 0}>
           {exporting ? 'Building PDF…' : 'Download PDF Report'}
@@ -197,7 +197,7 @@ export function Analytics() {
       {/* One filter row above everything it scopes — never per-chart filters. */}
       <div className="mb-6 flex flex-wrap items-end gap-3">
         <div>
-          <label htmlFor="range" className="mb-1 block text-xs font-medium text-slate-600">
+          <label htmlFor="range" className="mb-1 block text-xs font-medium text-ink-soft">
             Period
           </label>
           <Select id="range" value={range} onChange={(e) => setRange(e.target.value)} className="w-44">
@@ -211,7 +211,7 @@ export function Analytics() {
 
         {isSuperAdmin ? (
           <div>
-            <label htmlFor="dept" className="mb-1 block text-xs font-medium text-slate-600">
+            <label htmlFor="dept" className="mb-1 block text-xs font-medium text-ink-soft">
               Department
             </label>
             <Select id="dept" value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="w-56">
@@ -233,7 +233,7 @@ export function Analytics() {
       ) : null}
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm text-slate-500" role="status">
+        <p className="flex items-center gap-2 text-sm text-muted" role="status">
           <Spinner />
           Loading analytics…
         </p>

@@ -1,13 +1,55 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Design tokens. Components reference these role names as Tailwind utilities
+   (bg-panel, border-line, text-muted…) rather than raw hex, so the palette
+   changes in one place.
+
+   Dark-only by decision: a single well-tuned scheme beats two half-tuned ones,
+   and every surface/contrast pair below was picked against #000/#0a0a0a.
+   --------------------------------------------------------------------------- */
 @theme {
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-sans: "Inter var", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", sans-serif;
+
+  /* Surfaces, darkest to lightest */
+  --color-canvas: #000000;
+  --color-panel: #0a0a0a;
+  --color-raised: #141414;
+  --color-hover: #1a1a1a;
+
+  /* Hairlines. `line` is the default; `line-strong` marks focus/active edges. */
+  --color-line: #262626;
+  --color-line-strong: #3a3a3a;
+
+  /* Ink */
+  --color-ink: #ededed;
+  --color-ink-soft: #a1a1a1;
+  --color-muted: #6f6f6f;
+
+  /* Brand accent, stepped for a near-black surface */
+  --color-accent: #14b8a6;
+  --color-accent-hi: #2dd4bf;
+  --color-accent-dim: #0f766e;
+  --color-accent-wash: #0c2b28;
+
+  /* Semantic state. Steps chosen for >=3:1 on the panel, not flipped from light. */
+  --color-ok: #34d399;
+  --color-ok-wash: #052e22;
+  --color-warn: #fbbf24;
+  --color-warn-wash: #2e2306;
+  --color-danger: #f87171;
+  --color-danger-wash: #300f0f;
+  --color-info: #60a5fa;
+  --color-info-wash: #0b1f3a;
+  --color-violet: #a78bfa;
+  --color-violet-wash: #1e173a;
 }
 
 :root {
-  /* The app is light-only for now; declaring it stops browsers from auto-darkening
-     native controls (selects, scrollbars, date pickers) against our light surfaces. */
-  color-scheme: light;
+  /* Declared, not inferred: native controls, scrollbars and form widgets all
+     take their cue from this. */
+  color-scheme: dark;
 }
 
 html {
@@ -17,16 +59,51 @@ html {
 body {
   margin: 0;
   font-family: var(--font-sans);
-  /* Kills the grey flash on tap in mobile Safari/Chrome — we render our own active states. */
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  /* Kills the grey tap flash on mobile — active states are rendered instead. */
   -webkit-tap-highlight-color: transparent;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Anchored headings shouldn't hide under the sticky navbar. */
+/* Anchored headings clear the sticky header. */
 :target {
   scroll-margin-top: 5rem;
 }
 
-/* Respect the OS "reduce motion" setting globally rather than per-component. */
+/* A quiet scrollbar; the default light one is jarring on near-black. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #4a4a4a;
+  background-clip: content-box;
+}
+
+/* Date/time pickers ship a black glyph that vanishes on a dark field. */
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+/* Honour the OS reduce-motion setting globally rather than per component. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

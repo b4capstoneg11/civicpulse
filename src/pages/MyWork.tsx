@@ -22,17 +22,17 @@ function TicketRow({
   onStart: (issue: Issue) => void
 }) {
   return (
-    <li className="rounded-xl border border-slate-200 bg-white p-4">
+    <li className="rounded-xl border border-line bg-panel p-4">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <TicketNumber value={issue.ticket_number} className="text-sm font-semibold text-teal-700" />
+        <TicketNumber value={issue.ticket_number} className="text-sm font-semibold text-accent" />
         <div className="flex flex-wrap gap-2">
           <PriorityBadge priority={issue.priority} />
           <StatusBadge status={issue.status} />
         </div>
       </div>
 
-      <p className="mb-1.5 text-sm text-slate-700 break-words">{issue.comment}</p>
-      <p className="mb-3 text-xs text-slate-500 break-words">
+      <p className="mb-1.5 text-sm text-ink-soft break-words">{issue.comment}</p>
+      <p className="mb-3 text-xs text-muted break-words">
         {joinParts([issue.landmark, issue.area, issue.city])} ·{' '}
         <time dateTime={issue.created_at}>{formatRelative(issue.created_at)}</time>
       </p>
@@ -147,8 +147,8 @@ export function MyWork() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="mb-1 text-2xl font-semibold text-slate-900 text-balance">My Work</h1>
-      <p className="mb-8 text-slate-600 text-pretty">
+      <h1 className="mb-1 text-2xl font-semibold text-ink text-balance">My Work</h1>
+      <p className="mb-8 text-ink-soft text-pretty">
         Tickets assigned to you in {profile?.departments?.name ?? 'your department'}. New ones arrive
         automatically while you are on shift.
       </p>
@@ -160,15 +160,15 @@ export function MyWork() {
       ) : null}
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm text-slate-500" role="status">
+        <p className="flex items-center gap-2 text-sm text-muted" role="status">
           <Spinner />
           Loading your tickets…
         </p>
       ) : (
         <div className="space-y-8">
           <section>
-            <h2 className="mb-3 text-sm font-semibold text-slate-800">
-              Open <span className="ml-1 tabular-nums text-slate-400">({open.length})</span>
+            <h2 className="mb-3 text-sm font-semibold text-ink">
+              Open <span className="ml-1 tabular-nums text-muted">({open.length})</span>
             </h2>
             {open.length === 0 ? (
               <EmptyState
@@ -186,8 +186,8 @@ export function MyWork() {
 
           {done.length > 0 ? (
             <section>
-              <h2 className="mb-3 text-sm font-semibold text-slate-800">
-                Completed <span className="ml-1 tabular-nums text-slate-400">({done.length})</span>
+              <h2 className="mb-3 text-sm font-semibold text-ink">
+                Completed <span className="ml-1 tabular-nums text-muted">({done.length})</span>
               </h2>
               <ul className="space-y-3">
                 {done.map((issue) => (

@@ -226,26 +226,26 @@ export function ReportIssue() {
         <div
           aria-hidden="true"
           className={`mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full text-2xl ${
-            isDuplicate ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700'
+            isDuplicate ? 'bg-info-wash text-info' : 'bg-ok-wash text-ok'
           }`}
         >
           {isDuplicate ? '⇄' : '✓'}
         </div>
-        <h1 className="mb-2 text-2xl font-semibold text-slate-900 text-balance">
+        <h1 className="mb-2 text-2xl font-semibold text-ink text-balance">
           {isDuplicate ? 'This Was Already Reported' : 'Thank You for Your Report'}
         </h1>
-        <p className="mb-6 text-slate-600 text-pretty">
+        <p className="mb-6 text-ink-soft text-pretty">
           {isDuplicate
             ? 'Someone nearby already reported the same issue. Your report is linked to theirs, so you can track it too.'
             : 'Your ticket has been created and routed to the right department.'}
         </p>
-        <div className="mb-6 rounded-xl border border-teal-200 bg-teal-50 px-6 py-4">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-teal-700">Ticket Number</p>
-          <TicketNumber value={resultTicket ?? ''} className="text-2xl font-bold text-teal-800" />
+        <div className="mb-6 rounded-xl border border-accent/30 bg-accent-wash px-6 py-4">
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-accent">Ticket Number</p>
+          <TicketNumber value={resultTicket ?? ''} className="text-2xl font-bold text-accent-hi" />
         </div>
         <Link
           to={`/track?ticket=${resultTicket}`}
-          className="inline-flex rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+          className="inline-flex rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-accent-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           Track This Ticket
         </Link>
@@ -257,8 +257,8 @@ export function ReportIssue() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-10">
-      <h1 className="mb-1 text-2xl font-semibold text-slate-900 text-balance">Report a Civic Issue</h1>
-      <p className="mb-8 text-slate-600 text-pretty">
+      <h1 className="mb-1 text-2xl font-semibold text-ink text-balance">Report a Civic Issue</h1>
+      <p className="mb-8 text-ink-soft text-pretty">
         Add a photo, a short description, and your location. We’ll triage it and route it to the right
         department automatically.
       </p>
@@ -277,7 +277,7 @@ export function ReportIssue() {
                   setPhoto(e.target.files?.[0] ?? null)
                   setFieldErrors((prev) => ({ ...prev, photo: '' }))
                 }}
-                className="block w-full cursor-pointer rounded-lg border border-slate-300 bg-white p-2 text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-teal-700 hover:file:bg-teal-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+                className="block w-full cursor-pointer rounded-lg border border-line bg-panel p-2 text-sm text-ink-soft file:mr-3 file:rounded-md file:border-0 file:bg-accent-wash file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-accent hover:file:bg-accent-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
               />
               {photoPreview ? (
                 <img
@@ -285,7 +285,7 @@ export function ReportIssue() {
                   alt="Preview of the issue you’re reporting"
                   width={640}
                   height={256}
-                  className="mt-3 h-48 w-full rounded-lg border border-slate-200 object-cover"
+                  className="mt-3 h-48 w-full rounded-lg border border-line object-cover"
                 />
               ) : null}
             </>
@@ -332,10 +332,11 @@ export function ReportIssue() {
             the button's visible text as its accessible name, so screen readers would
             announce "Location" instead of "Capture My Location". */}
         <fieldset>
-          <legend className="mb-1.5 text-sm font-medium text-slate-800">Location</legend>
+          <legend className="mb-1.5 text-sm font-medium text-ink">Location</legend>
+          {/* Accent, not primary: Submit Report is this screen's one primary action. */}
           <Button
             type="button"
-            variant={location ? 'secondary' : 'primary'}
+            variant={location ? 'secondary' : 'accent'}
             onClick={captureLocation}
             loading={locating}
             aria-invalid={fieldErrors.location ? true : undefined}
@@ -344,27 +345,27 @@ export function ReportIssue() {
             {locating ? 'Getting Location…' : location ? 'Location Captured ✓' : 'Capture My Location'}
           </Button>
           {address ? (
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-ink-soft">
               {joinParts([address.area, address.city, address.state, address.pincode])}
             </p>
           ) : null}
           {fieldErrors.location ? (
-            <p id="location-error" className="mt-1.5 text-sm text-red-600">
+            <p id="location-error" className="mt-1.5 text-sm text-danger">
               {fieldErrors.location}
             </p>
           ) : null}
         </fieldset>
 
         <fieldset>
-          <legend className="mb-2 text-sm font-medium text-slate-800">How Should We Reach You?</legend>
+          <legend className="mb-2 text-sm font-medium text-ink">How Should We Reach You?</legend>
           <div className="mb-3 flex flex-wrap gap-2">
             {(['anonymous', 'phone', 'email'] as ReporterChannel[]).map((channel) => (
               <label
                 key={channel}
-                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors [touch-action:manipulation] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-teal-500 has-[:focus-visible]:ring-offset-2 ${
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors [touch-action:manipulation] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent has-[:focus-visible]:ring-offset-2 ${
                   reporterChannel === channel
-                    ? 'border-teal-600 bg-teal-50 text-teal-800'
-                    : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                    ? 'border-accent bg-accent-wash text-accent-hi'
+                    : 'border-line bg-panel text-ink-soft hover:border-line-strong'
                 }`}
               >
                 <input
@@ -376,7 +377,7 @@ export function ReportIssue() {
                     setReporterChannel(channel)
                     setFieldErrors((prev) => ({ ...prev, contact: '' }))
                   }}
-                  className="accent-teal-600 focus-visible:outline-none"
+                  className="accent-accent focus-visible:outline-none"
                 />
                 {CHANNEL_LABELS[channel]}
               </label>

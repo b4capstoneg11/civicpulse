@@ -13,9 +13,9 @@ const ROLE_LABELS: Record<Role, string> = {
 }
 
 const ROLE_STYLES: Record<Role, string> = {
-  super_admin: 'bg-violet-50 text-violet-700 ring-violet-200',
-  dept_admin: 'bg-blue-50 text-blue-700 ring-blue-200',
-  field_engineer: 'bg-teal-50 text-teal-700 ring-teal-200',
+  super_admin: 'bg-violet-wash text-violet ring-violet/25',
+  dept_admin: 'bg-info-wash text-info ring-info/25',
+  field_engineer: 'bg-accent-wash text-accent ring-accent/40',
 }
 
 function RoleBadge({ role }: { role: Role }) {
@@ -131,17 +131,17 @@ export function AdminUsers() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
-      <h1 className="mb-1 text-2xl font-semibold text-slate-900 text-balance">
+      <h1 className="mb-1 text-2xl font-semibold text-ink text-balance">
         {isSuperAdmin ? 'User Management' : 'My Team'}
       </h1>
-      <p className="mb-8 text-slate-600 text-pretty">
+      <p className="mb-8 text-ink-soft text-pretty">
         {isSuperAdmin
           ? 'Create one staff admin per department. Each staff admin then adds their own field engineers.'
           : 'Add the field engineers who will be assigned tickets in your department.'}
       </p>
 
-      <section className="mb-10 rounded-xl border border-slate-200 bg-white p-5">
-        <h2 className="mb-4 text-sm font-semibold text-slate-800">
+      <section className="mb-10 rounded-xl border border-line bg-panel p-5">
+        <h2 className="mb-4 text-sm font-semibold text-ink">
           Add {ROLE_LABELS[creatableRole]}
         </h2>
 
@@ -211,7 +211,7 @@ export function AdminUsers() {
             {isSuperAdmin ? (
               <>
                 <div>
-                  <label htmlFor="new-role" className="mb-1.5 block text-sm font-medium text-slate-800">
+                  <label htmlFor="new-role" className="mb-1.5 block text-sm font-medium text-ink">
                     Role
                   </label>
                   <Select id="new-role" value={newRole} onChange={(e) => setNewRole(e.target.value as Role)}>
@@ -221,7 +221,7 @@ export function AdminUsers() {
                 </div>
 
                 <div>
-                  <label htmlFor="new-department" className="mb-1.5 block text-sm font-medium text-slate-800">
+                  <label htmlFor="new-department" className="mb-1.5 block text-sm font-medium text-ink">
                     Department
                   </label>
                   <Select
@@ -241,8 +241,8 @@ export function AdminUsers() {
               </>
             ) : (
               <div className="sm:col-span-2">
-                <p className="text-sm text-slate-500">
-                  Added to <span className="font-medium text-slate-700">{profile?.departments?.name}</span> as a
+                <p className="text-sm text-muted">
+                  Added to <span className="font-medium text-ink-soft">{profile?.departments?.name}</span> as a
                   field engineer.
                 </p>
               </div>
@@ -259,12 +259,12 @@ export function AdminUsers() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-slate-800">
+        <h2 className="mb-3 text-sm font-semibold text-ink">
           {isSuperAdmin ? 'All Staff' : 'Field Engineers'}
         </h2>
 
         {loading ? (
-          <p className="flex items-center gap-2 text-sm text-slate-500" role="status">
+          <p className="flex items-center gap-2 text-sm text-muted" role="status">
             <Spinner />
             Loading…
           </p>
@@ -274,9 +274,9 @@ export function AdminUsers() {
             description="Anyone you create above will appear here."
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <div className="overflow-x-auto rounded-xl border border-line bg-panel">
             <table className="w-full text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              <thead className="border-b border-line bg-raised text-left text-xs uppercase tracking-wide text-muted">
                 <tr>
                   <th scope="col" className="px-4 py-2.5 font-medium">Name</th>
                   <th scope="col" className="px-4 py-2.5 font-medium">Role</th>
@@ -286,28 +286,28 @@ export function AdminUsers() {
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line">
                 {visibleUsers.map((user) => (
-                  <tr key={user.id} className={user.is_active ? '' : 'bg-slate-50 text-slate-400'}>
+                  <tr key={user.id} className={user.is_active ? '' : 'bg-raised text-muted'}>
                     <td className="px-4 py-3">
-                      <span className="font-medium text-slate-800">{user.full_name}</span>
-                      {user.phone ? <p className="text-xs text-slate-500">{user.phone}</p> : null}
+                      <span className="font-medium text-ink">{user.full_name}</span>
+                      {user.phone ? <p className="text-xs text-muted">{user.phone}</p> : null}
                     </td>
                     <td className="px-4 py-3">
                       <RoleBadge role={user.role} />
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{user.departments?.name ?? '—'}</td>
-                    <td className="px-4 py-3 tabular-nums text-slate-500">{formatDate(user.created_at)}</td>
+                    <td className="px-4 py-3 text-ink-soft">{user.departments?.name ?? '—'}</td>
+                    <td className="px-4 py-3 tabular-nums text-muted">{formatDate(user.created_at)}</td>
                     <td className="px-4 py-3">
                       {user.is_active ? (
-                        <span className="text-emerald-700">Active</span>
+                        <span className="text-ok">Active</span>
                       ) : (
-                        <span className="text-slate-400">Deactivated</span>
+                        <span className="text-muted">Deactivated</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {user.id === profile?.id ? (
-                        <span className="text-xs text-slate-400">You</span>
+                        <span className="text-xs text-muted">You</span>
                       ) : (
                         <Button variant="secondary" size="sm" onClick={() => toggleActive(user)}>
                           {user.is_active ? 'Deactivate' : 'Reactivate'}

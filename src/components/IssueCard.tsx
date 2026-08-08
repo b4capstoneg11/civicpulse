@@ -34,18 +34,18 @@ function IssueCardImpl({
               onClick()
             }
           }}
-          className={`mb-2 cursor-pointer select-none rounded-lg border bg-white p-3 shadow-sm transition-shadow [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 ${
+          className={`mb-2 cursor-pointer select-none rounded-lg border bg-panel p-3 shadow-sm transition-shadow [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
             snapshot.isDragging
-              ? 'border-teal-400 shadow-lg ring-2 ring-teal-400'
-              : 'border-slate-200 hover:border-teal-300 hover:shadow'
+              ? 'border-accent shadow-lg ring-2 ring-accent'
+              : 'border-line hover:border-accent/50 hover:shadow'
           }`}
         >
           <div className="mb-1.5 flex items-center justify-between gap-2">
-            <TicketNumber value={issue.ticket_number} className="text-xs font-semibold text-teal-700" />
+            <TicketNumber value={issue.ticket_number} className="text-xs font-semibold text-accent" />
             <PriorityBadge priority={issue.priority} />
           </div>
-          <p className="mb-1.5 line-clamp-2 text-sm text-slate-700 break-words">{issue.comment}</p>
-          <div className="mb-1.5 flex items-center justify-between gap-2 text-xs text-slate-400">
+          <p className="mb-1.5 line-clamp-2 text-sm text-ink-soft break-words">{issue.comment}</p>
+          <div className="mb-1.5 flex items-center justify-between gap-2 text-xs text-muted">
             {/* min-w-0 lets the truncate actually kick in inside a flex row. */}
             <span className="min-w-0 truncate">
               {issue.departments?.name ?? issue.issue_type} · {issue.area ?? 'Unknown area'}
@@ -56,14 +56,14 @@ function IssueCardImpl({
           </div>
 
           {issue.assignee ? (
-            <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-              <span aria-hidden="true" className="text-[8px] leading-none text-teal-600">
+            <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-raised px-2 py-0.5 text-xs text-ink-soft">
+              <span aria-hidden="true" className="text-[8px] leading-none text-accent">
                 ●
               </span>
               <span className="truncate">{issue.assignee.full_name}</span>
             </span>
           ) : (
-            <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700 ring-1 ring-inset ring-amber-200">
+            <span className="inline-flex items-center rounded-full bg-warn-wash px-2 py-0.5 text-xs text-warn ring-1 ring-inset ring-warn/25">
               Unassigned
             </span>
           )}

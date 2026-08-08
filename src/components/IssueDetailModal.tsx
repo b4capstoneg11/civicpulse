@@ -301,7 +301,7 @@ export function IssueDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -311,11 +311,11 @@ export function IssueDetailModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl bg-white p-6 shadow-2xl"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl bg-panel p-6 shadow-2xl"
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <TicketNumber id={titleId} value={issue.ticket_number} className="text-lg font-bold text-teal-700" />
+            <TicketNumber id={titleId} value={issue.ticket_number} className="text-lg font-bold text-accent" />
             <div className="mt-2 flex flex-wrap gap-2">
               <StatusBadge status={issue.status} />
               <PriorityBadge priority={issue.priority} />
@@ -326,7 +326,7 @@ export function IssueDetailModal({
             type="button"
             onClick={onClose}
             aria-label="Close Ticket Details"
-            className="-mr-2 -mt-1 shrink-0 rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+            className="-mr-2 -mt-1 shrink-0 rounded-md p-2 text-muted transition-colors hover:bg-raised hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <span aria-hidden="true" className="block text-lg leading-none">
               ✕
@@ -340,29 +340,29 @@ export function IssueDetailModal({
           width={640}
           height={256}
           loading="lazy"
-          className="mb-3 h-48 w-full rounded-lg border border-slate-200 bg-slate-100 object-cover"
+          className="mb-3 h-48 w-full rounded-lg border border-line bg-raised object-cover"
         />
 
-        <p className="mb-1.5 text-sm text-slate-700 break-words">{issue.comment}</p>
+        <p className="mb-1.5 text-sm text-ink-soft break-words">{issue.comment}</p>
         {issue.ai_summary ? (
-          <p className="mb-2 text-xs italic text-slate-500 break-words">AI summary: {issue.ai_summary}</p>
+          <p className="mb-2 text-xs italic text-muted break-words">AI summary: {issue.ai_summary}</p>
         ) : null}
-        <p className="mb-5 text-xs text-slate-500 break-words">
+        <p className="mb-5 text-xs text-muted break-words">
           {joinParts([issue.departments?.name, issue.landmark, issue.area, issue.city])}
         </p>
 
         <section className="mb-5">
-          <h3 className="mb-2 text-sm font-semibold text-slate-800">Audit Trail</h3>
+          <h3 className="mb-2 text-sm font-semibold text-ink">Audit Trail</h3>
           {history.length === 0 ? (
-            <p className="text-sm text-slate-400">No history recorded yet.</p>
+            <p className="text-sm text-muted">No history recorded yet.</p>
           ) : (
-            <ol className="space-y-3 border-l-2 border-slate-200 pl-4 text-sm">
+            <ol className="space-y-3 border-l-2 border-line pl-4 text-sm">
               {history.map((entry) => (
                 <li key={entry.id}>
-                  <time dateTime={entry.created_at} className="text-xs tabular-nums text-slate-400">
+                  <time dateTime={entry.created_at} className="text-xs tabular-nums text-muted">
                     {formatDateTime(entry.created_at)}
                   </time>
-                  <p className="text-slate-600 break-words">{entry.note ?? entry.status}</p>
+                  <p className="text-ink-soft break-words">{entry.note ?? entry.status}</p>
                 </li>
               ))}
             </ol>
@@ -370,11 +370,11 @@ export function IssueDetailModal({
         </section>
 
         {canChangeStatus ? (
-          <section className="mb-4 rounded-lg border border-slate-200 bg-white p-4">
-            <h3 className="mb-3 text-sm font-semibold text-slate-800">Manage Ticket</h3>
+          <section className="mb-4 rounded-lg border border-line bg-panel p-4">
+            <h3 className="mb-3 text-sm font-semibold text-ink">Manage Ticket</h3>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label htmlFor="change-status" className="mb-1.5 block text-sm font-medium text-slate-800">
+                <label htmlFor="change-status" className="mb-1.5 block text-sm font-medium text-ink">
                   Status
                 </label>
                 <Select
@@ -398,7 +398,7 @@ export function IssueDetailModal({
 
               {canManageDepartment ? (
                 <div>
-                  <label htmlFor="change-assignee" className="mb-1.5 block text-sm font-medium text-slate-800">
+                  <label htmlFor="change-assignee" className="mb-1.5 block text-sm font-medium text-ink">
                     Assigned To
                   </label>
                   <Select
@@ -441,9 +441,9 @@ export function IssueDetailModal({
                     ) : null}
                   </Select>
                   {candidatesLoading ? (
-                    <p className="mt-1.5 text-xs text-slate-500">Loading available staff…</p>
+                    <p className="mt-1.5 text-xs text-muted">Loading available staff…</p>
                   ) : candidates.length === 0 ? (
-                    <p className="mt-1.5 text-xs text-amber-700">
+                    <p className="mt-1.5 text-xs text-warn">
                       No active staff in this department. Add someone under Team before reassigning.
                     </p>
                   ) : null}
@@ -451,7 +451,7 @@ export function IssueDetailModal({
               ) : null}
             </div>
 
-            <p className="mt-2 text-xs text-slate-500 text-pretty">
+            <p className="mt-2 text-xs text-muted text-pretty">
               {canManageDepartment
                 ? 'Only active engineers in this department can be assigned. Marking a ticket resolved requires proof below.'
                 : 'Marking this ticket resolved requires a proof photo and description below.'}
@@ -471,8 +471,8 @@ export function IssueDetailModal({
         ) : null}
 
         {canResolve ? (
-          <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <h3 className="mb-3 text-sm font-semibold text-slate-800">Mark as Resolved</h3>
+          <section className="rounded-lg border border-line bg-raised p-4">
+            <h3 className="mb-3 text-sm font-semibold text-ink">Mark as Resolved</h3>
             <div className="space-y-3">
               <Field label="Proof Photo" required hint="Show the completed work.">
                 {(props) => (
@@ -482,7 +482,7 @@ export function IssueDetailModal({
                     accept="image/*"
                     name="resolutionPhoto"
                     onChange={(e) => setResolutionPhoto(e.target.files?.[0] ?? null)}
-                    className="block w-full cursor-pointer rounded-lg border border-slate-300 bg-white p-2 text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-teal-700 hover:file:bg-teal-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+                    className="block w-full cursor-pointer rounded-lg border border-line bg-panel p-2 text-sm text-ink-soft file:mr-3 file:rounded-md file:border-0 file:bg-accent-wash file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-accent hover:file:bg-accent-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                   />
                 )}
               </Field>

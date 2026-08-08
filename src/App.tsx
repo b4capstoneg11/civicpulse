@@ -22,7 +22,7 @@ const Analytics = lazy(() => import('./pages/Analytics').then((m) => ({ default:
 
 function RouteFallback() {
   return (
-    <div className="flex items-center justify-center gap-2 px-4 py-24 text-sm text-slate-500" role="status">
+    <div className="flex items-center justify-center gap-2 px-4 py-24 text-sm text-muted" role="status">
       <Spinner />
       Loading…
     </div>
@@ -32,13 +32,13 @@ function RouteFallback() {
 function NotFound() {
   return (
     <div className="mx-auto max-w-md px-4 py-24 text-center">
-      <h1 className="mb-2 text-2xl font-semibold text-slate-900 text-balance">Page Not Found</h1>
-      <p className="mb-6 text-slate-600 text-pretty">
+      <h1 className="mb-2 text-2xl font-semibold text-ink text-balance">Page Not Found</h1>
+      <p className="mb-6 text-ink-soft text-pretty">
         That link doesn’t point anywhere. Try reporting an issue or tracking an existing ticket.
       </p>
       <Link
         to="/"
-        className="inline-flex rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+        className="inline-flex rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-accent-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
       >
         Report an Issue
       </Link>
@@ -50,10 +50,10 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <div className="min-h-screen bg-slate-50 text-slate-900">
+        <div className="min-h-screen bg-canvas text-ink">
           <a
             href="#main"
-            className="sr-only rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
+            className="sr-only rounded-md bg-accent-dim px-4 py-2 text-sm font-medium text-canvas focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
           >
             Skip to Main Content
           </a>

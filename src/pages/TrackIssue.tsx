@@ -78,8 +78,8 @@ export function TrackIssue() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="mb-1 text-2xl font-semibold text-slate-900 text-balance">Track Your Report</h1>
-      <p className="mb-8 text-slate-600 text-pretty">
+      <h1 className="mb-1 text-2xl font-semibold text-ink text-balance">Track Your Report</h1>
+      <p className="mb-8 text-ink-soft text-pretty">
         Enter the ticket number from your report to see its current status.
       </p>
 
@@ -107,7 +107,7 @@ export function TrackIssue() {
       </form>
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm text-slate-500" role="status">
+        <p className="flex items-center gap-2 text-sm text-muted" role="status">
           <Spinner />
           Loading…
         </p>
@@ -117,16 +117,16 @@ export function TrackIssue() {
 
       {issue ? (
         <div className="space-y-6">
-          <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <section className="rounded-xl border border-line bg-panel p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <TicketNumber value={issue.ticket_number} className="text-lg font-bold text-teal-700" />
+              <TicketNumber value={issue.ticket_number} className="text-lg font-bold text-accent" />
               <div className="flex flex-wrap gap-2">
                 <PriorityBadge priority={issue.priority} />
                 <StatusBadge status={issue.status} />
               </div>
             </div>
-            <p className="mb-1.5 text-sm text-slate-700 break-words">{issue.comment}</p>
-            <p className="text-xs text-slate-500 break-words">
+            <p className="mb-1.5 text-sm text-ink-soft break-words">{issue.comment}</p>
+            <p className="text-xs text-muted break-words">
               {joinParts([issue.departments?.name, issue.area, issue.city])}
             </p>
             <img
@@ -135,26 +135,26 @@ export function TrackIssue() {
               width={640}
               height={256}
               loading="lazy"
-              className="mt-4 h-48 w-full rounded-lg border border-slate-200 bg-slate-100 object-cover"
+              className="mt-4 h-48 w-full rounded-lg border border-line bg-raised object-cover"
             />
           </section>
 
           <section>
-            <h2 className="mb-3 text-sm font-semibold text-slate-800">Status Timeline</h2>
+            <h2 className="mb-3 text-sm font-semibold text-ink">Status Timeline</h2>
             {history.length === 0 ? (
-              <p className="text-sm text-slate-400">No updates recorded yet.</p>
+              <p className="text-sm text-muted">No updates recorded yet.</p>
             ) : (
-              <ol className="space-y-4 border-l-2 border-slate-200 pl-4">
+              <ol className="space-y-4 border-l-2 border-line pl-4">
                 {history.map((entry) => (
                   <li key={entry.id}>
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge status={entry.status as Issue['status']} />
-                      <time dateTime={entry.created_at} className="text-xs tabular-nums text-slate-400">
+                      <time dateTime={entry.created_at} className="text-xs tabular-nums text-muted">
                         {formatDateTime(entry.created_at)}
                       </time>
                     </div>
                     {entry.note ? (
-                      <p className="mt-1 text-sm text-slate-600 break-words">{entry.note}</p>
+                      <p className="mt-1 text-sm text-ink-soft break-words">{entry.note}</p>
                     ) : null}
                   </li>
                 ))}
@@ -163,18 +163,18 @@ export function TrackIssue() {
           </section>
 
           {(issue.status === 'resolved' || issue.status === 'closed') && issue.resolution_photo_url ? (
-            <section className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
-              <h2 className="mb-3 text-sm font-semibold text-emerald-900">Resolution</h2>
+            <section className="rounded-xl border border-ok/30 bg-ok-wash p-5">
+              <h2 className="mb-3 text-sm font-semibold text-ok">Resolution</h2>
               <img
                 src={issue.resolution_photo_url}
                 alt="Photo showing the completed work"
                 width={640}
                 height={224}
                 loading="lazy"
-                className="mb-3 h-44 w-full rounded-lg border border-emerald-200 bg-emerald-100 object-cover"
+                className="mb-3 h-44 w-full rounded-lg border border-ok/30 bg-ok-wash object-cover"
               />
               {issue.resolution_comment ? (
-                <p className="text-sm text-emerald-900 break-words">{issue.resolution_comment}</p>
+                <p className="text-sm text-ok break-words">{issue.resolution_comment}</p>
               ) : null}
             </section>
           ) : null}

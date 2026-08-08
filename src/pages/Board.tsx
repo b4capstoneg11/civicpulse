@@ -189,15 +189,15 @@ export function Board() {
     <div className="px-4 py-6 sm:px-6">
       <div className="mb-5 flex flex-wrap items-end gap-3">
         <div className="mr-2">
-          <h1 className="text-xl font-semibold text-slate-900">Issue Board</h1>
-          <p className="text-xs text-slate-500">
+          <h1 className="text-xl font-semibold text-ink">Issue Board</h1>
+          <p className="text-xs text-muted">
             {isSuperAdmin ? 'All departments' : (profile?.departments?.name ?? 'Your department')}
           </p>
         </div>
 
         {isSuperAdmin ? (
           <div>
-            <label htmlFor="filter-department" className="mb-1 block text-xs font-medium text-slate-600">
+            <label htmlFor="filter-department" className="mb-1 block text-xs font-medium text-ink-soft">
               Department
             </label>
             <Select
@@ -217,7 +217,7 @@ export function Board() {
         ) : null}
 
         <div>
-          <label htmlFor="filter-assignee" className="mb-1 block text-xs font-medium text-slate-600">
+          <label htmlFor="filter-assignee" className="mb-1 block text-xs font-medium text-ink-soft">
             Assigned To
           </label>
           <Select
@@ -237,7 +237,7 @@ export function Board() {
         </div>
 
         <div>
-          <label htmlFor="filter-priority" className="mb-1 block text-xs font-medium text-slate-600">
+          <label htmlFor="filter-priority" className="mb-1 block text-xs font-medium text-ink-soft">
             Priority
           </label>
           <Select
@@ -254,7 +254,7 @@ export function Board() {
         </div>
 
         <div>
-          <label htmlFor="filter-area" className="mb-1 block text-xs font-medium text-slate-600">
+          <label htmlFor="filter-area" className="mb-1 block text-xs font-medium text-ink-soft">
             Area
           </label>
           <input
@@ -265,7 +265,7 @@ export function Board() {
             value={filterArea}
             onChange={(e) => setFilter('area', e.target.value)}
             placeholder="Sector 12…"
-            className="w-44 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+            className="w-44 rounded-lg border border-line bg-panel px-3 py-2 text-sm text-ink placeholder:text-muted transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
           />
         </div>
 
@@ -273,7 +273,7 @@ export function Board() {
           <button
             type="button"
             onClick={() => setSearchParams(new URLSearchParams(), { replace: true })}
-            className="rounded-lg px-2.5 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+            className="rounded-lg px-2.5 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             Clear Filters
           </button>
@@ -287,7 +287,7 @@ export function Board() {
       ) : null}
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm text-slate-500" role="status">
+        <p className="flex items-center gap-2 text-sm text-muted" role="status">
           <Spinner />
           Loading board…
         </p>

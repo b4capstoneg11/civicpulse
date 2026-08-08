@@ -5,13 +5,13 @@ import { Spinner } from './ui'
 import type { Role } from '../lib/types'
 
 const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2'
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2'
 
 function Gate({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
   return (
     <div className="mx-auto max-w-md px-4 py-24 text-center">
-      <h1 className="mb-2 text-xl font-semibold text-slate-900 text-balance">{title}</h1>
-      <p className="mb-6 text-slate-600 text-pretty">{body}</p>
+      <h1 className="mb-2 text-xl font-semibold text-ink text-balance">{title}</h1>
+      <p className="mb-6 text-ink-soft text-pretty">{body}</p>
       {action}
     </div>
   )
@@ -27,7 +27,7 @@ export function RequireRole({ allow, children }: { allow: Role[]; children: Reac
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center gap-2 px-4 py-24 text-sm text-slate-500" role="status">
+      <div className="flex items-center justify-center gap-2 px-4 py-24 text-sm text-muted" role="status">
         <Spinner />
         Loading…
       </div>
@@ -42,7 +42,7 @@ export function RequireRole({ allow, children }: { allow: Role[]; children: Reac
         action={
           <Link
             to="/login"
-            className={`inline-flex rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 ${focusRing}`}
+            className={`inline-flex rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-accent-hi ${focusRing}`}
           >
             Go to Login
           </Link>
@@ -77,7 +77,7 @@ export function RequireRole({ allow, children }: { allow: Role[]; children: Reac
         action={
           <Link
             to="/"
-            className={`inline-flex rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 ${focusRing}`}
+            className={`inline-flex rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-accent-hi ${focusRing}`}
           >
             Back to Home
           </Link>

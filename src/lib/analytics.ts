@@ -12,8 +12,23 @@ export const BUCKET_LABELS: Record<Bucket, string> = {
   closed: 'Closed',
 }
 
-/** Validated against the white card surface — see the palette check in the PRD. */
+/**
+ * On-screen steps, selected for the dark panel (#0a0a0a) rather than flipped
+ * from the light set — all-pairs CVD ΔE 9.4, normal-vision 20.9, every colour
+ * clearing 3:1 against the surface.
+ */
 export const BUCKET_COLORS: Record<Bucket, string> = {
+  open: '#d95926',
+  resolved: '#199e70',
+  closed: '#3987e5',
+}
+
+/**
+ * The PDF is a white document, so the charts are re-inked with the light steps
+ * before rasterising. Without this the dark-surface colours would sit on white
+ * at the wrong contrast.
+ */
+export const BUCKET_COLORS_PRINT: Record<Bucket, string> = {
   open: '#eb6834',
   resolved: '#1baf7a',
   closed: '#2a78d6',

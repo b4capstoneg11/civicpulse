@@ -74,14 +74,14 @@ function RichText({ text }: { text: string }) {
                     <Link
                       key={key}
                       to={`/track?ticket=${piece}`}
-                      className={`font-mono text-teal-700 underline decoration-teal-300 underline-offset-2 hover:decoration-teal-600 ${bold ? 'font-semibold' : ''}`}
+                      className={`font-mono text-accent underline decoration-accent/50 underline-offset-2 hover:decoration-accent ${bold ? 'font-semibold' : ''}`}
                     >
                       {piece}
                     </Link>
                   )
                 }
                 return bold ? (
-                  <strong key={key} className="font-semibold text-slate-900">
+                  <strong key={key} className="font-semibold text-ink">
                     {piece}
                   </strong>
                 ) : (
@@ -92,7 +92,7 @@ function RichText({ text }: { text: string }) {
 
         return bullet ? (
           <p key={li} className="flex gap-2 py-0.5">
-            <span aria-hidden="true" className="text-slate-400">
+            <span aria-hidden="true" className="text-muted">
               •
             </span>
             <span>{rendered}</span>
@@ -214,7 +214,7 @@ export function AssistantDrawer() {
         onClick={() => setOpen(true)}
         aria-expanded={open}
         aria-label="Open the CivicPulse assistant"
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-teal-600 px-4 py-3 text-sm font-medium text-white shadow-lg transition-colors [touch-action:manipulation] hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-accent px-4 py-3 text-sm font-medium text-canvas shadow-lg transition-colors [touch-action:manipulation] hover:bg-accent-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
       >
         <span aria-hidden="true">✦</span>
         Ask CivicPulse
@@ -223,7 +223,7 @@ export function AssistantDrawer() {
       {open ? (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
@@ -233,16 +233,16 @@ export function AssistantDrawer() {
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="relative flex h-full w-full max-w-md flex-col overflow-hidden bg-white shadow-2xl"
+            className="relative flex h-full w-full max-w-md flex-col overflow-hidden bg-panel shadow-2xl"
           >
-            <header className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+            <header className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
               <div className="min-w-0">
-                <h2 id={titleId} className="text-sm font-semibold text-slate-900">
+                <h2 id={titleId} className="text-sm font-semibold text-ink">
                   Ask CivicPulse
                 </h2>
                 {/* Naming the scope makes it obvious the assistant answers from a
                     different slice of data for each role. */}
-                <p className="truncate text-xs text-slate-500">
+                <p className="truncate text-xs text-muted">
                   {ROLE_LABELS[role]} · {SCOPE_NOTE[role]}
                   {role === 'dept_admin' && profile?.departments?.name
                     ? ` (${profile.departments.name})`
@@ -253,7 +253,7 @@ export function AssistantDrawer() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close the assistant"
-                className="-mr-2 -mt-1 rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+                className="-mr-2 -mt-1 rounded-md p-2 text-muted transition-colors hover:bg-raised hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <span aria-hidden="true" className="block text-lg leading-none">
                   ✕
@@ -270,7 +270,7 @@ export function AssistantDrawer() {
             >
               {turns.length === 0 ? (
                 <div>
-                  <p className="mb-3 text-sm text-slate-600 text-pretty">
+                  <p className="mb-3 text-sm text-ink-soft text-pretty">
                     I can answer questions about the tickets you have access to — counts, backlogs, a specific
                     ticket’s history. I only read data; I can’t change anything.
                   </p>
@@ -280,7 +280,7 @@ export function AssistantDrawer() {
                         <button
                           type="button"
                           onClick={() => send(s)}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:border-teal-300 hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+                          className="w-full rounded-lg border border-line px-3 py-2 text-left text-sm text-ink-soft transition-colors hover:border-accent/50 hover:bg-accent-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         >
                           {s}
                         </button>
@@ -294,12 +294,12 @@ export function AssistantDrawer() {
                     <li key={i}>
                       {t.role === 'user' ? (
                         <div className="flex justify-end">
-                          <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-teal-600 px-3.5 py-2 text-sm text-white break-words">
+                          <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-accent px-3.5 py-2 text-sm text-canvas break-words">
                             {t.content}
                           </p>
                         </div>
                       ) : (
-                        <div className="max-w-[95%] text-sm text-slate-700">
+                        <div className="max-w-[95%] text-sm text-ink-soft">
                           <RichText text={t.content} />
                         </div>
                       )}
@@ -309,7 +309,7 @@ export function AssistantDrawer() {
               )}
 
               {busy ? (
-                <p className="mt-4 flex items-center gap-2 text-sm text-slate-500">
+                <p className="mt-4 flex items-center gap-2 text-sm text-muted">
                   <Spinner />
                   Looking through your tickets…
                 </p>
@@ -327,7 +327,7 @@ export function AssistantDrawer() {
                 e.preventDefault()
                 send(draft)
               }}
-              className="border-t border-slate-200 px-5 py-3"
+              className="border-t border-line px-5 py-3"
             >
               <label htmlFor="assistant-input" className="sr-only">
                 Ask a question about your tickets
@@ -348,12 +348,12 @@ export function AssistantDrawer() {
                   rows={2}
                   maxLength={800}
                   placeholder="Ask about your tickets…"
-                  className="min-w-0 flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1"
+                  className="min-w-0 flex-1 resize-none rounded-lg border border-line px-3 py-2 text-sm text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
                 />
                 <button
                   type="submit"
                   disabled={busy || draft.trim() === ''}
-                  className="shrink-0 rounded-lg bg-teal-600 px-3.5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+                  className="shrink-0 rounded-lg bg-accent px-3.5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                 >
                   Send
                 </button>
@@ -365,7 +365,7 @@ export function AssistantDrawer() {
                     setTurns([])
                     setError(null)
                   }}
-                  className="mt-2 text-xs text-slate-500 underline decoration-slate-300 underline-offset-2 hover:text-slate-700"
+                  className="mt-2 text-xs text-muted underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
                 >
                   Start a new conversation
                 </button>
