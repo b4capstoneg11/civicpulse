@@ -5,7 +5,7 @@ import { Spinner } from './ui'
 import type { Role } from '../lib/types'
 
 const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2'
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2'
 
 function Gate({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
   return (
@@ -27,7 +27,7 @@ export function RequireRole({ allow, children }: { allow: Role[]; children: Reac
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center gap-2 px-4 py-24 text-sm text-muted" role="status">
+      <div className="flex items-center justify-center gap-2 px-4 py-24 text-sm text-subtle" role="status">
         <Spinner />
         Loading…
       </div>
@@ -42,7 +42,7 @@ export function RequireRole({ allow, children }: { allow: Role[]; children: Reac
         action={
           <Link
             to="/login"
-            className={`inline-flex rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-accent-hi ${focusRing}`}
+            className={`inline-flex rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi ${focusRing}`}
           >
             Go to Login
           </Link>
@@ -77,7 +77,7 @@ export function RequireRole({ allow, children }: { allow: Role[]; children: Reac
         action={
           <Link
             to="/"
-            className={`inline-flex rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-accent-hi ${focusRing}`}
+            className={`inline-flex rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi ${focusRing}`}
           >
             Back to Home
           </Link>

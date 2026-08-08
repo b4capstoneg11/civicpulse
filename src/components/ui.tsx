@@ -5,13 +5,13 @@ import type { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, TextareaHTML
 // and touch-action:manipulation here, so individual screens can't forget them.
 
 const FOCUS_RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
 
 const VARIANTS = {
   // A near-white primary is the SaaS-dashboard convention on near-black: it
   // outranks any accent fill without shouting.
   primary: 'bg-ink text-canvas hover:bg-panel active:bg-ink/90 font-medium',
-  accent: 'bg-accent text-canvas hover:bg-accent-hi active:bg-accent-dim font-medium',
+  accent: 'bg-brand text-canvas hover:bg-brand-hi active:bg-brand-dim font-medium',
   success: 'bg-ok text-canvas hover:brightness-110 active:brightness-95 font-medium',
   secondary: 'bg-raised text-ink border border-line hover:bg-hover hover:border-line-strong',
   ghost: 'text-ink-soft hover:bg-raised hover:text-ink',
@@ -101,10 +101,10 @@ export function Field({
     <div>
       <label htmlFor={id} className="mb-1.5 block text-[13px] font-medium text-ink">
         {label}
-        {required ? null : <span className="ml-1.5 font-normal text-muted">(optional)</span>}
+        {required ? null : <span className="ml-1.5 font-normal text-subtle">(optional)</span>}
       </label>
       {hint ? (
-        <p id={hintId} className="mb-1.5 text-xs text-muted">
+        <p id={hintId} className="mb-1.5 text-xs text-subtle">
           {hint}
         </p>
       ) : null}
@@ -123,7 +123,7 @@ export function Field({
 }
 
 const CONTROL =
-  'w-full rounded-lg border border-line bg-raised px-3 text-sm text-ink placeholder:text-muted transition-colors hover:border-line-strong aria-[invalid=true]:border-danger'
+  'w-full rounded-lg border border-line bg-raised px-3 text-sm text-ink placeholder:text-subtle transition-colors hover:border-line-strong aria-[invalid=true]:border-danger'
 
 export function Input({ className = '', ...rest }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={`${CONTROL} h-9 ${FOCUS_RING} ${className}`} {...rest} />
@@ -175,7 +175,7 @@ export function EmptyState({ title, description }: { title: string; description?
   return (
     <div className="rounded-xl border border-dashed border-line px-6 py-12 text-center">
       <p className="text-sm font-medium text-ink text-pretty">{title}</p>
-      {description ? <p className="mt-1.5 text-[13px] text-muted text-pretty">{description}</p> : null}
+      {description ? <p className="mt-1.5 text-[13px] text-subtle text-pretty">{description}</p> : null}
     </div>
   )
 }

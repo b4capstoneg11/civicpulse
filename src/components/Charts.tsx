@@ -98,7 +98,7 @@ export function MonthlyColumns({ data, height = 240 }: { data: Series[]; height?
   const titleId = useId()
   const { colors, chrome } = usePalette()
 
-  if (data.length === 0) return <p className="py-8 text-center text-sm text-muted">No tickets yet.</p>
+  if (data.length === 0) return <p className="py-8 text-center text-sm text-subtle">No tickets yet.</p>
 
   const padL = 34
   const padR = 8
@@ -215,7 +215,7 @@ export function BreakdownBars({ data, maxRows = 8 }: { data: Series[]; maxRows?:
   const titleId = useId()
   const { colors, chrome } = usePalette()
 
-  if (data.length === 0) return <p className="py-8 text-center text-sm text-muted">No tickets yet.</p>
+  if (data.length === 0) return <p className="py-8 text-center text-sm text-subtle">No tickets yet.</p>
 
   const rows = data.slice(0, maxRows)
   const labelW = 148
@@ -299,7 +299,7 @@ export function SeriesTable({ data, firstColumn }: { data: Series[]; firstColumn
   return (
     <div className="overflow-x-auto rounded-lg border border-line">
       <table className="w-full text-[13px]">
-        <thead className="border-b border-line bg-raised text-[11px] uppercase tracking-wider text-muted">
+        <thead className="border-b border-line bg-raised text-[11px] uppercase tracking-wider text-subtle">
           <tr>
             <th scope="col" className="px-3 py-2 text-left font-medium">{firstColumn}</th>
             {BUCKETS.map((b) => (

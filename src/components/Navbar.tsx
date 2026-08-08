@@ -6,7 +6,7 @@ import { ThemeToggle } from './ThemeToggle'
 import { Button } from './ui'
 
 const linkBase =
-  'rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
+  'rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
 
 function navLinkClass({ isActive }: { isActive: boolean }) {
   return `${linkBase} ${isActive ? 'bg-raised text-ink' : 'text-ink-soft hover:bg-raised/60 hover:text-ink'}`
@@ -33,7 +33,7 @@ export function Navbar() {
           to="/"
           className={`${linkBase} -ml-2.5 flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em] text-ink hover:bg-raised/60`}
         >
-          <span aria-hidden="true" className="grid h-5 w-5 place-items-center rounded-[5px] bg-accent text-[11px] font-bold text-canvas">
+          <span aria-hidden="true" className="grid h-5 w-5 place-items-center rounded-[5px] bg-brand text-[11px] font-bold text-canvas">
             C
           </span>
           <span translate="no">CivicPulse</span>
@@ -87,7 +87,7 @@ export function Navbar() {
                 <span className="truncate text-[13px] font-medium text-ink">
                   {profile?.full_name ?? session.user.email}
                 </span>
-                {role ? <span className="text-[11px] text-muted">{ROLE_LABELS[role]}</span> : null}
+                {role ? <span className="text-[11px] text-subtle">{ROLE_LABELS[role]}</span> : null}
               </span>
 
               <ThemeToggle />

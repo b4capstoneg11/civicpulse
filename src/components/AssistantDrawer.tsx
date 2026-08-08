@@ -1,10 +1,18 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { readFunctionError } from '../lib/functionError'
 import { useAuth } from '../hooks/useAuth'
 import { ROLE_LABELS } from '../lib/labels'
 import { Alert, Spinner } from './ui'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 
 interface Turn {
   role: 'user' | 'assistant'
@@ -74,7 +82,7 @@ function RichText({ text }: { text: string }) {
                     <Link
                       key={key}
                       to={`/track?ticket=${piece}`}
-                      className={`font-mono text-accent underline decoration-accent/50 underline-offset-2 hover:decoration-accent ${bold ? 'font-semibold' : ''}`}
+                      className={`font-mono text-brand underline decoration-brand/50 underline-offset-2 hover:decoration-brand ${bold ? 'font-semibold' : ''}`}
                     >
                       {piece}
                     </Link>
@@ -92,7 +100,7 @@ function RichText({ text }: { text: string }) {
 
         return bullet ? (
           <p key={li} className="flex gap-2 py-0.5">
-            <span aria-hidden="true" className="text-muted">
+            <span aria-hidden="true" className="text-subtle">
               •
             </span>
             <span>{rendered}</span>
@@ -116,10 +124,8 @@ export function AssistantDrawer() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const panelRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const logRef = useRef<HTMLDivElement>(null)
-  const titleId = useId()
 
   // This drawer is mounted outside the routes so a conversation survives
   // navigation — which also means it survives a logout. Without this reset the
@@ -139,39 +145,8 @@ export function AssistantDrawer() {
     }
   }, [userId])
 
-  // Focus moves in on open and back to the launcher on close; Tab stays inside.
-  useEffect(() => {
-    if (!open) return
-    const previouslyFocused = document.activeElement as HTMLElement | null
-    inputRef.current?.focus()
-
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        setOpen(false)
-        return
-      }
-      if (e.key !== 'Tab' || !panelRef.current) return
-      const focusable = panelRef.current.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      )
-      if (focusable.length === 0) return
-      const first = focusable[0]
-      const last = focusable[focusable.length - 1]
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        first.focus()
-      }
-    }
-
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('keydown', onKeyDown)
-      previouslyFocused?.focus()
-    }
-  }, [open])
+  // Escape, the focus trap, focus restoration and scroll locking are all Radix's
+  // job now — this used to be ~30 lines of hand-rolled key handling.
 
   // Keep the newest turn in view as the conversation grows.
   useEffect(() => {
@@ -208,60 +183,46 @@ export function AssistantDrawer() {
   if (!session || !role) return null
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-expanded={open}
-        aria-label="Open the CivicPulse assistant"
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-accent px-4 py-3 text-sm font-medium text-canvas shadow-lg transition-colors [touch-action:manipulation] hover:bg-accent-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+    // Controlled (open/onOpenChange) so the conversation state lives here beside
+    // `turns` — but the launcher is still a real SheetTrigger, which is what lets
+    // Radix return focus to it when the drawer closes.
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button
+          type="button"
+          aria-label="Open the CivicPulse assistant"
+          className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-brand px-4 py-3 text-sm font-medium text-canvas shadow-lg transition-colors [touch-action:manipulation] hover:bg-brand-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+        >
+          <span aria-hidden="true">✦</span>
+          Ask CivicPulse
+        </button>
+      </SheetTrigger>
+
+      <SheetContent
+        side="right"
+        aria-modal="true"
+        // Wider than the shadcn default (sm:max-w-sm); a conversation needs room.
+        className="w-full gap-0 p-0 sm:max-w-md"
+        // Radix would otherwise focus the close button; the input is what the
+        // user wants, and it was the focus target before this migration too.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault()
+          inputRef.current?.focus()
+        }}
       >
-        <span aria-hidden="true">✦</span>
-        Ask CivicPulse
-      </button>
+          <SheetHeader className="gap-0.5 border-b border-line px-5 py-4 pr-12">
+            <SheetTitle className="text-sm font-semibold text-ink">Ask CivicPulse</SheetTitle>
+            {/* Naming the scope makes it obvious the assistant answers from a
+                different slice of data for each role. */}
+            <SheetDescription className="truncate text-xs text-subtle">
+              {ROLE_LABELS[role]} · {SCOPE_NOTE[role]}
+              {role === 'dept_admin' && profile?.departments?.name
+                ? ` (${profile.departments.name})`
+                : ''}
+            </SheetDescription>
+          </SheetHeader>
 
-      {open ? (
-        <div className="fixed inset-0 z-50 flex justify-end">
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={() => setOpen(false)}
-            aria-hidden="true"
-          />
-
-          <div
-            ref={panelRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            className="relative flex h-full w-full max-w-md flex-col overflow-hidden bg-panel shadow-2xl"
-          >
-            <header className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
-              <div className="min-w-0">
-                <h2 id={titleId} className="text-sm font-semibold text-ink">
-                  Ask CivicPulse
-                </h2>
-                {/* Naming the scope makes it obvious the assistant answers from a
-                    different slice of data for each role. */}
-                <p className="truncate text-xs text-muted">
-                  {ROLE_LABELS[role]} · {SCOPE_NOTE[role]}
-                  {role === 'dept_admin' && profile?.departments?.name
-                    ? ` (${profile.departments.name})`
-                    : ''}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label="Close the assistant"
-                className="-mr-2 -mt-1 rounded-md p-2 text-muted transition-colors hover:bg-raised hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <span aria-hidden="true" className="block text-lg leading-none">
-                  ✕
-                </span>
-              </button>
-            </header>
-
-            <div
               ref={logRef}
               className="flex-1 overflow-y-auto overscroll-contain px-5 py-4"
               role="log"
@@ -280,7 +241,7 @@ export function AssistantDrawer() {
                         <button
                           type="button"
                           onClick={() => send(s)}
-                          className="w-full rounded-lg border border-line px-3 py-2 text-left text-sm text-ink-soft transition-colors hover:border-accent/50 hover:bg-accent-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                          className="w-full rounded-lg border border-line px-3 py-2 text-left text-sm text-ink-soft transition-colors hover:border-brand/50 hover:bg-brand-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                         >
                           {s}
                         </button>
@@ -294,7 +255,7 @@ export function AssistantDrawer() {
                     <li key={i}>
                       {t.role === 'user' ? (
                         <div className="flex justify-end">
-                          <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-accent px-3.5 py-2 text-sm text-canvas break-words">
+                          <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-brand px-3.5 py-2 text-sm text-canvas break-words">
                             {t.content}
                           </p>
                         </div>
@@ -309,7 +270,7 @@ export function AssistantDrawer() {
               )}
 
               {busy ? (
-                <p className="mt-4 flex items-center gap-2 text-sm text-muted">
+                <p className="mt-4 flex items-center gap-2 text-sm text-subtle">
                   <Spinner />
                   Looking through your tickets…
                 </p>
@@ -348,12 +309,12 @@ export function AssistantDrawer() {
                   rows={2}
                   maxLength={800}
                   placeholder="Ask about your tickets…"
-                  className="min-w-0 flex-1 resize-none rounded-lg border border-line px-3 py-2 text-sm text-ink placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
+                  className="min-w-0 flex-1 resize-none rounded-lg border border-line px-3 py-2 text-sm text-ink placeholder:text-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1"
                 />
                 <button
                   type="submit"
                   disabled={busy || draft.trim() === ''}
-                  className="shrink-0 rounded-lg bg-accent px-3.5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-accent-hi disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                  className="shrink-0 rounded-lg bg-brand px-3.5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
                 >
                   Send
                 </button>
@@ -365,15 +326,13 @@ export function AssistantDrawer() {
                     setTurns([])
                     setError(null)
                   }}
-                  className="mt-2 text-xs text-muted underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
+                  className="mt-2 text-xs text-subtle underline decoration-line-strong underline-offset-2 hover:text-ink-soft"
                 >
                   Start a new conversation
                 </button>
               ) : null}
             </form>
-          </div>
-        </div>
-      ) : null}
-    </>
+      </SheetContent>
+    </Sheet>
   )
 }

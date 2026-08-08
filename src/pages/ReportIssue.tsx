@@ -239,13 +239,13 @@ export function ReportIssue() {
             ? 'Someone nearby already reported the same issue. Your report is linked to theirs, so you can track it too.'
             : 'Your ticket has been created and routed to the right department.'}
         </p>
-        <div className="mb-6 rounded-xl border border-accent/30 bg-accent-wash px-6 py-4">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-accent">Ticket Number</p>
-          <TicketNumber value={resultTicket ?? ''} className="text-2xl font-bold text-accent-hi" />
+        <div className="mb-6 rounded-xl border border-brand/30 bg-brand-wash px-6 py-4">
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-brand">Ticket Number</p>
+          <TicketNumber value={resultTicket ?? ''} className="text-2xl font-bold text-brand-hi" />
         </div>
         <Link
           to={`/track?ticket=${resultTicket}`}
-          className="inline-flex rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-accent-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+          className="inline-flex rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
         >
           Track This Ticket
         </Link>
@@ -277,7 +277,7 @@ export function ReportIssue() {
                   setPhoto(e.target.files?.[0] ?? null)
                   setFieldErrors((prev) => ({ ...prev, photo: '' }))
                 }}
-                className="block w-full cursor-pointer rounded-lg border border-line bg-panel p-2 text-sm text-ink-soft file:mr-3 file:rounded-md file:border-0 file:bg-accent-wash file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-accent hover:file:bg-accent-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                className="block w-full cursor-pointer rounded-lg border border-line bg-panel p-2 text-sm text-ink-soft file:mr-3 file:rounded-md file:border-0 file:bg-brand-wash file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-brand hover:file:bg-brand-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
               />
               {photoPreview ? (
                 <img
@@ -362,9 +362,9 @@ export function ReportIssue() {
             {(['anonymous', 'phone', 'email'] as ReporterChannel[]).map((channel) => (
               <label
                 key={channel}
-                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors [touch-action:manipulation] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent has-[:focus-visible]:ring-offset-2 ${
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors [touch-action:manipulation] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand has-[:focus-visible]:ring-offset-2 ${
                   reporterChannel === channel
-                    ? 'border-accent bg-accent-wash text-accent-hi'
+                    ? 'border-brand bg-brand-wash text-brand-hi'
                     : 'border-line bg-panel text-ink-soft hover:border-line-strong'
                 }`}
               >
@@ -377,7 +377,7 @@ export function ReportIssue() {
                     setReporterChannel(channel)
                     setFieldErrors((prev) => ({ ...prev, contact: '' }))
                   }}
-                  className="accent-accent focus-visible:outline-none"
+                  className="accent-brand focus-visible:outline-none"
                 />
                 {CHANNEL_LABELS[channel]}
               </label>

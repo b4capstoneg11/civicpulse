@@ -49,10 +49,10 @@ export function RatingWidget({
           {RATINGS.map((n) => (
             <label
               key={n}
-              className={`flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border text-sm font-semibold transition-colors [touch-action:manipulation] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent has-[:focus-visible]:ring-offset-2 ${
+              className={`flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border text-sm font-semibold transition-colors [touch-action:manipulation] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand has-[:focus-visible]:ring-offset-2 ${
                 rating >= n
                   ? 'border-warn bg-warn text-canvas'
-                  : 'border-line bg-panel text-muted hover:border-line-strong'
+                  : 'border-line bg-panel text-subtle hover:border-line-strong'
               }`}
             >
               <input
@@ -99,7 +99,7 @@ export function RatingWidget({
         {submitting ? 'Submitting…' : 'Submit Rating'}
       </Button>
 
-      <p className="mt-3 text-xs text-muted text-pretty">
+      <p className="mt-3 text-xs text-subtle text-pretty">
         A rating of 1 or 2 automatically reopens this ticket and routes it back for review.
       </p>
     </section>

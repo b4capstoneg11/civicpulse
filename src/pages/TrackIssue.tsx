@@ -107,7 +107,7 @@ export function TrackIssue() {
       </form>
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm text-muted" role="status">
+        <p className="flex items-center gap-2 text-sm text-subtle" role="status">
           <Spinner />
           Loading…
         </p>
@@ -119,14 +119,14 @@ export function TrackIssue() {
         <div className="space-y-6">
           <section className="rounded-xl border border-line bg-panel p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <TicketNumber value={issue.ticket_number} className="text-lg font-bold text-accent" />
+              <TicketNumber value={issue.ticket_number} className="text-lg font-bold text-brand" />
               <div className="flex flex-wrap gap-2">
                 <PriorityBadge priority={issue.priority} />
                 <StatusBadge status={issue.status} />
               </div>
             </div>
             <p className="mb-1.5 text-sm text-ink-soft break-words">{issue.comment}</p>
-            <p className="text-xs text-muted break-words">
+            <p className="text-xs text-subtle break-words">
               {joinParts([issue.departments?.name, issue.area, issue.city])}
             </p>
             <img
@@ -142,14 +142,14 @@ export function TrackIssue() {
           <section>
             <h2 className="mb-3 text-sm font-semibold text-ink">Status Timeline</h2>
             {history.length === 0 ? (
-              <p className="text-sm text-muted">No updates recorded yet.</p>
+              <p className="text-sm text-subtle">No updates recorded yet.</p>
             ) : (
               <ol className="space-y-4 border-l-2 border-line pl-4">
                 {history.map((entry) => (
                   <li key={entry.id}>
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge status={entry.status as Issue['status']} />
-                      <time dateTime={entry.created_at} className="text-xs tabular-nums text-muted">
+                      <time dateTime={entry.created_at} className="text-xs tabular-nums text-subtle">
                         {formatDateTime(entry.created_at)}
                       </time>
                     </div>

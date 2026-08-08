@@ -10,6 +10,10 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
+      // Matches the "@/*" path in tsconfig, which is how shadcn/ui components
+      // import each other.
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+
       // jsPDF statically references these for its .html() API, which this app
       // never calls. Aliasing them to an empty module keeps ~240 KB gzipped of
       // rasteriser and sanitiser out of the analytics chunk.

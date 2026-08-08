@@ -1,4 +1,11 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { StatusBadge, PriorityBadge, TicketNumber } from './StatusBadge'
@@ -57,9 +64,6 @@ export function IssueDetailModal({
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  const dialogRef = useRef<HTMLDivElement>(null)
-  const closeButtonRef = useRef<HTMLButtonElement>(null)
-  const titleId = useId()
 
   useEffect(() => {
     supabase
@@ -130,47 +134,40 @@ export function IssueDetailModal({
     }
   }, [canManageDepartment, issue.department_id])
 
-  // Focus moves into the dialog on open and returns to the trigger on close;
-  // Tab is kept inside while it's open.
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement | null
-    closeButtonRef.current?.focus()
+  // Escape, the focus trap and body scroll locking are Radix's job now.
+  //
+  // Focus *restoration* is not, in this case: Radix returns focus to its
+  // DialogTrigger, and there isn't one — the trigger is a Kanban card in a
+  // different component, and closing unmounts this whole dialog. So the element
+  // that had focus on open is captured here and restored explicitly, otherwise a
+  // keyboard user lands on <body> and has to tab from the top again.
+  // Captured during the first render, deliberately not in an effect: Radix moves
+  // focus into the dialog in its own effect, which runs first, so an effect here
+  // would record an element inside the dialog — one that is about to unmount.
+  const openerRef = useRef<HTMLElement | null>(null)
+  if (openerRef.current === null) {
+    openerRef.current = document.activeElement as HTMLElement | null
+  }
 
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        onClose()
-        return
-      }
-      if (e.key !== 'Tab' || !dialogRef.current) return
-
-      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      )
-      if (focusable.length === 0) return
-
-      const first = focusable[0]
-      const last = focusable[focusable.length - 1]
-
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        first.focus()
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    // Stop the page behind the dialog from scrolling.
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = previousOverflow
-      previouslyFocused?.focus()
-    }
-  }, [onClose])
+  /**
+   * Radix restores focus to its DialogTrigger, and there isn't one here — the
+   * trigger is a card in another component, and closing unmounts this dialog.
+   * The restore therefore has to happen after unmount, on the next frame:
+   * anything synchronous is undone by Radix's own focus-scope teardown, which
+   * lands the user on <body>.
+   *
+   * The opener is re-found by its aria-label because the list behind the dialog
+   * may have re-rendered, leaving the captured node detached.
+   */
+  function closeAndRestoreFocus() {
+    const opener = openerRef.current
+    const label = opener?.getAttribute('aria-label') ?? null
+    onClose()
+    requestAnimationFrame(() => {
+      const fresh = label ? document.querySelector<HTMLElement>(`[aria-label="${label}"]`) : null
+      ;(fresh ?? opener)?.focus()
+    })
+  }
 
   async function changeStatus(next: IssueStatus) {
     if (next === issue.status) return
@@ -300,39 +297,25 @@ export function IssueDetailModal({
   const canResolve = RESOLVABLE_STATUSES.includes(issue.status) && (canManageDepartment || assignedToMe)
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div
-        ref={dialogRef}
-        role="dialog"
+    // Always open: the parent mounts this only when a ticket is selected, so
+    // closing means unmounting. onOpenChange covers Escape and the scrim.
+    <Dialog open onOpenChange={(next) => { if (!next) closeAndRestoreFocus() }}>
+      <DialogContent
         aria-modal="true"
-        aria-labelledby={titleId}
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl bg-panel p-6 shadow-2xl"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain p-6"
       >
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <TicketNumber id={titleId} value={issue.ticket_number} className="text-lg font-bold text-accent" />
-            <div className="mt-2 flex flex-wrap gap-2">
-              <StatusBadge status={issue.status} />
-              <PriorityBadge priority={issue.priority} />
-            </div>
+        <DialogHeader className="mb-2 gap-2 p-0 pr-8 text-left">
+          <DialogTitle asChild>
+            <TicketNumber value={issue.ticket_number} className="text-lg font-bold text-brand" />
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Ticket details, audit trail and management actions
+          </DialogDescription>
+          <div className="flex flex-wrap gap-2">
+            <StatusBadge status={issue.status} />
+            <PriorityBadge priority={issue.priority} />
           </div>
-          <button
-            ref={closeButtonRef}
-            type="button"
-            onClick={onClose}
-            aria-label="Close Ticket Details"
-            className="-mr-2 -mt-1 shrink-0 rounded-md p-2 text-muted transition-colors hover:bg-raised hover:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            <span aria-hidden="true" className="block text-lg leading-none">
-              ✕
-            </span>
-          </button>
-        </div>
+        </DialogHeader>
 
         <img
           src={issue.photo_url}
@@ -345,21 +328,21 @@ export function IssueDetailModal({
 
         <p className="mb-1.5 text-sm text-ink-soft break-words">{issue.comment}</p>
         {issue.ai_summary ? (
-          <p className="mb-2 text-xs italic text-muted break-words">AI summary: {issue.ai_summary}</p>
+          <p className="mb-2 text-xs italic text-subtle break-words">AI summary: {issue.ai_summary}</p>
         ) : null}
-        <p className="mb-5 text-xs text-muted break-words">
+        <p className="mb-5 text-xs text-subtle break-words">
           {joinParts([issue.departments?.name, issue.landmark, issue.area, issue.city])}
         </p>
 
         <section className="mb-5">
           <h3 className="mb-2 text-sm font-semibold text-ink">Audit Trail</h3>
           {history.length === 0 ? (
-            <p className="text-sm text-muted">No history recorded yet.</p>
+            <p className="text-sm text-subtle">No history recorded yet.</p>
           ) : (
             <ol className="space-y-3 border-l-2 border-line pl-4 text-sm">
               {history.map((entry) => (
                 <li key={entry.id}>
-                  <time dateTime={entry.created_at} className="text-xs tabular-nums text-muted">
+                  <time dateTime={entry.created_at} className="text-xs tabular-nums text-subtle">
                     {formatDateTime(entry.created_at)}
                   </time>
                   <p className="text-ink-soft break-words">{entry.note ?? entry.status}</p>
@@ -441,7 +424,7 @@ export function IssueDetailModal({
                     ) : null}
                   </Select>
                   {candidatesLoading ? (
-                    <p className="mt-1.5 text-xs text-muted">Loading available staff…</p>
+                    <p className="mt-1.5 text-xs text-subtle">Loading available staff…</p>
                   ) : candidates.length === 0 ? (
                     <p className="mt-1.5 text-xs text-warn">
                       No active staff in this department. Add someone under Team before reassigning.
@@ -451,7 +434,7 @@ export function IssueDetailModal({
               ) : null}
             </div>
 
-            <p className="mt-2 text-xs text-muted text-pretty">
+            <p className="mt-2 text-xs text-subtle text-pretty">
               {canManageDepartment
                 ? 'Only active engineers in this department can be assigned. Marking a ticket resolved requires proof below.'
                 : 'Marking this ticket resolved requires a proof photo and description below.'}
@@ -482,7 +465,7 @@ export function IssueDetailModal({
                     accept="image/*"
                     name="resolutionPhoto"
                     onChange={(e) => setResolutionPhoto(e.target.files?.[0] ?? null)}
-                    className="block w-full cursor-pointer rounded-lg border border-line bg-panel p-2 text-sm text-ink-soft file:mr-3 file:rounded-md file:border-0 file:bg-accent-wash file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-accent hover:file:bg-accent-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                    className="block w-full cursor-pointer rounded-lg border border-line bg-panel p-2 text-sm text-ink-soft file:mr-3 file:rounded-md file:border-0 file:bg-brand-wash file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-brand hover:file:bg-brand-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
                   />
                 )}
               </Field>
@@ -508,7 +491,7 @@ export function IssueDetailModal({
             </div>
           </section>
         ) : null}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

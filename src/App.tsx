@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { AuthProvider } from './components/AuthProvider'
 import { ThemeProvider } from './components/ThemeProvider'
 import { Navbar } from './components/Navbar'
-import { AssistantDrawer } from './components/AssistantDrawer'
 import { RequireRole } from './components/RequireRole'
 import { Spinner } from './components/ui'
 import { ReportIssue } from './pages/ReportIssue'
@@ -20,10 +19,15 @@ const AdminRoster = lazy(() => import('./pages/AdminRoster').then((m) => ({ defa
 // Analytics pulls in the PDF library, so it stays in its own chunk — nobody
 // downloads jsPDF unless they open this page.
 const Analytics = lazy(() => import('./pages/Analytics').then((m) => ({ default: m.Analytics })))
+// The drawer pulls in Radix Dialog and lucide, and it renders nothing for
+// residents — so it is split out rather than sitting in the main bundle.
+const AssistantDrawer = lazy(() =>
+  import('./components/AssistantDrawer').then((m) => ({ default: m.AssistantDrawer }))
+)
 
 function RouteFallback() {
   return (
-    <div className="flex items-center justify-center gap-2 px-4 py-24 text-sm text-muted" role="status">
+    <div className="flex items-center justify-center gap-2 px-4 py-24 text-sm text-subtle" role="status">
       <Spinner />
       Loading…
     </div>
@@ -39,7 +43,7 @@ function NotFound() {
       </p>
       <Link
         to="/"
-        className="inline-flex rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-accent-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+        className="inline-flex rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
       >
         Report an Issue
       </Link>
@@ -56,14 +60,18 @@ function App() {
         <div className="min-h-screen bg-canvas text-ink">
           <a
             href="#main"
-            className="sr-only rounded-md bg-accent-dim px-4 py-2 text-sm font-medium text-canvas focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
+            className="sr-only rounded-md bg-brand-dim px-4 py-2 text-sm font-medium text-canvas focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
           >
             Skip to Main Content
           </a>
           <Navbar />
           {/* Mounted once, outside the routes, so the conversation survives
-              navigation and closing the drawer. Renders nothing for residents. */}
-          <AssistantDrawer />
+              navigation and closing the drawer. Renders nothing for residents.
+              Its own Suspense with no fallback: there is nothing to show while
+              a launcher button loads. */}
+          <Suspense fallback={null}>
+            <AssistantDrawer />
+          </Suspense>
           <main id="main">
             <Suspense fallback={<RouteFallback />}>
               <Routes>

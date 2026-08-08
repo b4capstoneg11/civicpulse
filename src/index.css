@@ -1,17 +1,29 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+/*
+  shadcn keys its dark variant off a `.dark` ancestor class. We also stamp
+  data-theme on <html> for our own selectors, so ThemeProvider sets both — that
+  way shadcn's generated components work untouched and nothing here has to be
+  patched when new ones are added.
+*/
+@custom-variant dark (&:is(.dark *));
 
 /* ---------------------------------------------------------------------------
-   Design tokens. Components reference these role names as Tailwind utilities
-   (bg-panel, border-line, text-muted…) rather than raw hex, so both themes are
-   defined in one place and nothing downstream knows which is active.
+   Our design tokens.
+
+   NOTE ON NAMING: shadcn reserves `accent` (a hover surface) and `muted` (a
+   surface, with `muted-foreground` for its text). Ours meant a brand colour and
+   a text grey, so they are named `brand` and `subtle` here. Keeping both sets
+   distinct means `bg-accent` and `text-muted` still mean what shadcn's
+   components expect, and our own roles never silently change meaning.
 
    Light is the base; dark is layered over it. Each theme's steps were chosen
    against its own surfaces — dark is not an inversion of light.
    --------------------------------------------------------------------------- */
 @theme {
-  --font-sans: "Inter var", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", sans-serif;
-
   /* ---- LIGHT (default) ---- */
   --color-canvas: #ffffff;
   --color-panel: #ffffff;
@@ -23,12 +35,12 @@
 
   --color-ink: #18181b;
   --color-ink-soft: #52525b;
-  --color-muted: #71717a;
+  --color-subtle: #71717a;
 
-  --color-accent: #0d9488;
-  --color-accent-hi: #0f766e;
-  --color-accent-dim: #115e59;
-  --color-accent-wash: #eefcf9;
+  --color-brand: #0d9488;
+  --color-brand-hi: #0f766e;
+  --color-brand-dim: #115e59;
+  --color-brand-wash: #eefcf9;
 
   --color-ok: #15803d;
   --color-ok-wash: #f0fdf4;
@@ -43,9 +55,9 @@
 }
 
 /*
-  Dark values, declared under both scopes: the media query covers the OS
-  setting, the attribute scope covers the explicit choice. The :not() guard lets
-  a "light" stamp beat OS-dark, so the toggle wins in both directions.
+  Dark values under both scopes: the media query covers the OS setting, the
+  attribute scope covers the explicit choice. The :not() guard lets a "light"
+  stamp beat OS-dark, so the toggle wins in both directions.
 */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -61,12 +73,12 @@
 
     --color-ink: #ededed;
     --color-ink-soft: #a1a1a1;
-    --color-muted: #6f6f6f;
+    --color-subtle: #6f6f6f;
 
-    --color-accent: #14b8a6;
-    --color-accent-hi: #2dd4bf;
-    --color-accent-dim: #0f766e;
-    --color-accent-wash: #0c2b28;
+    --color-brand: #14b8a6;
+    --color-brand-hi: #2dd4bf;
+    --color-brand-dim: #0f766e;
+    --color-brand-wash: #0c2b28;
 
     --color-ok: #34d399;
     --color-ok-wash: #052e22;
@@ -94,12 +106,12 @@
 
   --color-ink: #ededed;
   --color-ink-soft: #a1a1a1;
-  --color-muted: #6f6f6f;
+  --color-subtle: #6f6f6f;
 
-  --color-accent: #14b8a6;
-  --color-accent-hi: #2dd4bf;
-  --color-accent-dim: #0f766e;
-  --color-accent-wash: #0c2b28;
+  --color-brand: #14b8a6;
+  --color-brand-hi: #2dd4bf;
+  --color-brand-dim: #0f766e;
+  --color-brand-wash: #0c2b28;
 
   --color-ok: #34d399;
   --color-ok-wash: #052e22;
@@ -117,13 +129,51 @@
   color-scheme: light;
 }
 
+/* ---------------------------------------------------------------------------
+   The bridge: shadcn's variables derive from our tokens rather than carrying
+   their own values. Because our tokens already switch per theme, this single
+   block serves both — there is no separate `.dark` override to keep in sync,
+   and a shadcn Dialog picks up our exact panel and border colours.
+   --------------------------------------------------------------------------- */
+:root,
+.dark {
+  --background: var(--color-canvas);
+  --foreground: var(--color-ink);
+
+  --card: var(--color-panel);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-panel);
+  --popover-foreground: var(--color-ink);
+
+  /* Primary is our near-white/near-black button, not the brand teal. */
+  --primary: var(--color-ink);
+  --primary-foreground: var(--color-canvas);
+
+  --secondary: var(--color-raised);
+  --secondary-foreground: var(--color-ink);
+
+  --muted: var(--color-raised);
+  --muted-foreground: var(--color-subtle);
+
+  --accent: var(--color-hover);
+  --accent-foreground: var(--color-ink);
+
+  --destructive: var(--color-danger);
+  --destructive-foreground: var(--color-canvas);
+
+  --border: var(--color-line);
+  --input: var(--color-line);
+  --ring: var(--color-brand);
+
+  --radius: 0.625rem;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
-  font-family: var(--font-sans);
   background: var(--color-canvas);
   color: var(--color-ink);
   /* Kills the grey tap flash on mobile — active states are rendered instead. */
@@ -157,7 +207,7 @@ body {
   background-clip: content-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: var(--color-muted);
+  background: var(--color-subtle);
   background-clip: content-box;
 }
 
@@ -181,5 +231,49 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* --- shadcn's generated mappings, kept as it writes them --------------------
+   Only the colour and radius slots are consumed; the sidebar and chart slots are
+   left in place so a future `shadcn add` finds what it expects. Our charts do
+   not use --chart-*: their colours are inline SVG attributes so the PDF export
+   can serialise them.
+   -------------------------------------------------------------------------- */
+@theme inline {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-heading: var(--font-sans);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  html {
+    @apply font-sans;
   }
 }

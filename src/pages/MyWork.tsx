@@ -24,7 +24,7 @@ function TicketRow({
   return (
     <li className="rounded-xl border border-line bg-panel p-4">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <TicketNumber value={issue.ticket_number} className="text-sm font-semibold text-accent" />
+        <TicketNumber value={issue.ticket_number} className="text-sm font-semibold text-brand" />
         <div className="flex flex-wrap gap-2">
           <PriorityBadge priority={issue.priority} />
           <StatusBadge status={issue.status} />
@@ -32,7 +32,7 @@ function TicketRow({
       </div>
 
       <p className="mb-1.5 text-sm text-ink-soft break-words">{issue.comment}</p>
-      <p className="mb-3 text-xs text-muted break-words">
+      <p className="mb-3 text-xs text-subtle break-words">
         {joinParts([issue.landmark, issue.area, issue.city])} ·{' '}
         <time dateTime={issue.created_at}>{formatRelative(issue.created_at)}</time>
       </p>
@@ -160,7 +160,7 @@ export function MyWork() {
       ) : null}
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm text-muted" role="status">
+        <p className="flex items-center gap-2 text-sm text-subtle" role="status">
           <Spinner />
           Loading your tickets…
         </p>
@@ -168,7 +168,7 @@ export function MyWork() {
         <div className="space-y-8">
           <section>
             <h2 className="mb-3 text-sm font-semibold text-ink">
-              Open <span className="ml-1 tabular-nums text-muted">({open.length})</span>
+              Open <span className="ml-1 tabular-nums text-subtle">({open.length})</span>
             </h2>
             {open.length === 0 ? (
               <EmptyState
@@ -187,7 +187,7 @@ export function MyWork() {
           {done.length > 0 ? (
             <section>
               <h2 className="mb-3 text-sm font-semibold text-ink">
-                Completed <span className="ml-1 tabular-nums text-muted">({done.length})</span>
+                Completed <span className="ml-1 tabular-nums text-subtle">({done.length})</span>
               </h2>
               <ul className="space-y-3">
                 {done.map((issue) => (

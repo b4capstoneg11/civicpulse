@@ -31,11 +31,11 @@ function KanbanColumnImpl({
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={`min-h-24 flex-1 rounded-lg transition-colors ${
-              snapshot.isDraggingOver ? 'bg-accent-wash ring-2 ring-inset ring-accent/40' : ''
+              snapshot.isDraggingOver ? 'bg-brand-wash ring-2 ring-inset ring-brand/40' : ''
             }`}
           >
             {issues.length === 0 && !snapshot.isDraggingOver ? (
-              <p className="px-2 py-6 text-center text-xs text-muted">No tickets</p>
+              <p className="px-2 py-6 text-center text-xs text-subtle">No tickets</p>
             ) : null}
             {issues.map((issue, index) => (
               <IssueCard key={issue.id} issue={issue} index={index} onSelect={onSelect} />

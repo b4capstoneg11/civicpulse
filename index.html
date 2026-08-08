@@ -22,9 +22,13 @@
                 ? 'dark'
                 : 'light'
           document.documentElement.setAttribute('data-theme', resolved)
+          // shadcn/ui keys its dark variant off a `.dark` ancestor class, so both
+          // markers are set: data-theme for our selectors, .dark for theirs.
+          document.documentElement.classList.toggle('dark', resolved === 'dark')
           document.documentElement.style.colorScheme = resolved
         } catch (e) {
           document.documentElement.setAttribute('data-theme', 'dark')
+          document.documentElement.classList.add('dark')
         }
       })()
     </script>

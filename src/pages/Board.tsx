@@ -190,7 +190,7 @@ export function Board() {
       <div className="mb-5 flex flex-wrap items-end gap-3">
         <div className="mr-2">
           <h1 className="text-xl font-semibold text-ink">Issue Board</h1>
-          <p className="text-xs text-muted">
+          <p className="text-xs text-subtle">
             {isSuperAdmin ? 'All departments' : (profile?.departments?.name ?? 'Your department')}
           </p>
         </div>
@@ -265,7 +265,7 @@ export function Board() {
             value={filterArea}
             onChange={(e) => setFilter('area', e.target.value)}
             placeholder="Sector 12…"
-            className="w-44 rounded-lg border border-line bg-panel px-3 py-2 text-sm text-ink placeholder:text-muted transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            className="w-44 rounded-lg border border-line bg-panel px-3 py-2 text-sm text-ink placeholder:text-subtle transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
           />
         </div>
 
@@ -273,7 +273,7 @@ export function Board() {
           <button
             type="button"
             onClick={() => setSearchParams(new URLSearchParams(), { replace: true })}
-            className="rounded-lg px-2.5 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="rounded-lg px-2.5 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           >
             Clear Filters
           </button>
@@ -287,7 +287,7 @@ export function Board() {
       ) : null}
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm text-muted" role="status">
+        <p className="flex items-center gap-2 text-sm text-subtle" role="status">
           <Spinner />
           Loading board…
         </p>

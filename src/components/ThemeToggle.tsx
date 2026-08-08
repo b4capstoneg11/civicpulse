@@ -32,10 +32,10 @@ export function ThemeToggle() {
             }
             title={o.key === 'system' ? `System (${resolved})` : o.label}
             onClick={() => setPreference(o.key)}
-            className={`grid h-6 w-6 place-items-center rounded-md text-[12px] leading-none transition-colors [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas ${
+            className={`grid h-6 w-6 place-items-center rounded-md text-[12px] leading-none transition-colors [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 focus-visible:ring-offset-canvas ${
               active
                 ? 'bg-panel text-ink shadow-sm'
-                : 'text-muted hover:text-ink-soft'
+                : 'text-subtle hover:text-ink-soft'
             }`}
           >
             <span aria-hidden="true">{o.icon}</span>

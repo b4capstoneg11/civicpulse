@@ -17,10 +17,10 @@ const RANGES = [
 function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-xl border border-line bg-panel px-4 py-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-subtle">{label}</p>
       {/* Proportional figures deliberately: tabular-nums makes display sizes look loose. */}
       <p className="mt-1 text-2xl font-semibold text-ink">{value}</p>
-      {hint ? <p className="mt-0.5 text-xs text-muted">{hint}</p> : null}
+      {hint ? <p className="mt-0.5 text-xs text-subtle">{hint}</p> : null}
     </div>
   )
 }
@@ -44,13 +44,13 @@ function ChartCard({
       <div className="mb-1 flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold text-ink">{title}</h2>
-          <p className="text-xs text-muted">{subtitle}</p>
+          <p className="text-xs text-subtle">{subtitle}</p>
         </div>
         <button
           type="button"
           onClick={() => setShowTable((v) => !v)}
           aria-expanded={showTable}
-          className="rounded-md px-2 py-1 text-xs font-medium text-accent transition-colors hover:bg-accent-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="rounded-md px-2 py-1 text-xs font-medium text-brand transition-colors hover:bg-brand-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
         >
           {showTable ? 'Show chart' : 'Show table'}
         </button>
@@ -233,7 +233,7 @@ export function Analytics() {
       ) : null}
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm text-muted" role="status">
+        <p className="flex items-center gap-2 text-sm text-subtle" role="status">
           <Spinner />
           Loading analytics…
         </p>

@@ -8,7 +8,7 @@ const STATUS_STYLES: Record<IssueStatus, string> = {
   assigned: 'bg-info-wash text-info ring-info/25',
   in_progress: 'bg-warn-wash text-warn ring-warn/25',
   resolved: 'bg-ok-wash text-ok ring-ok/25',
-  closed: 'bg-raised text-muted ring-line',
+  closed: 'bg-raised text-subtle ring-line',
   reopened: 'bg-danger-wash text-danger ring-danger/25',
 }
 
@@ -23,7 +23,7 @@ export function StatusBadge({ status }: { status: IssueStatus }) {
 }
 
 const PRIORITY_STYLES: Record<Priority, string> = {
-  low: 'bg-raised text-muted ring-line',
+  low: 'bg-raised text-subtle ring-line',
   medium: 'bg-warn-wash text-warn ring-warn/25',
   high: 'bg-danger-wash text-danger ring-danger/25',
 }

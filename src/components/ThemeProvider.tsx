@@ -44,6 +44,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement
     root.setAttribute('data-theme', resolved)
+    // shadcn/ui's dark variant matches a `.dark` ancestor, so both markers are
+    // kept in step: data-theme drives our selectors, .dark drives theirs.
+    root.classList.toggle('dark', resolved === 'dark')
     root.style.colorScheme = resolved
 
     const meta = document.querySelector('meta[name="theme-color"]:not([media])')

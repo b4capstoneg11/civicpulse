@@ -34,18 +34,18 @@ function IssueCardImpl({
               onClick()
             }
           }}
-          className={`mb-2 cursor-pointer select-none rounded-lg border bg-panel p-3 shadow-sm transition-shadow [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
+          className={`mb-2 cursor-pointer select-none rounded-lg border bg-panel p-3 shadow-sm transition-shadow [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 ${
             snapshot.isDragging
-              ? 'border-accent shadow-lg ring-2 ring-accent'
-              : 'border-line hover:border-accent/50 hover:shadow'
+              ? 'border-brand shadow-lg ring-2 ring-brand'
+              : 'border-line hover:border-brand/50 hover:shadow'
           }`}
         >
           <div className="mb-1.5 flex items-center justify-between gap-2">
-            <TicketNumber value={issue.ticket_number} className="text-xs font-semibold text-accent" />
+            <TicketNumber value={issue.ticket_number} className="text-xs font-semibold text-brand" />
             <PriorityBadge priority={issue.priority} />
           </div>
           <p className="mb-1.5 line-clamp-2 text-sm text-ink-soft break-words">{issue.comment}</p>
-          <div className="mb-1.5 flex items-center justify-between gap-2 text-xs text-muted">
+          <div className="mb-1.5 flex items-center justify-between gap-2 text-xs text-subtle">
             {/* min-w-0 lets the truncate actually kick in inside a flex row. */}
             <span className="min-w-0 truncate">
               {issue.departments?.name ?? issue.issue_type} · {issue.area ?? 'Unknown area'}
@@ -57,7 +57,7 @@ function IssueCardImpl({
 
           {issue.assignee ? (
             <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-raised px-2 py-0.5 text-xs text-ink-soft">
-              <span aria-hidden="true" className="text-[8px] leading-none text-accent">
+              <span aria-hidden="true" className="text-[8px] leading-none text-brand">
                 ●
               </span>
               <span className="truncate">{issue.assignee.full_name}</span>

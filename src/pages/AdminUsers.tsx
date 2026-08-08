@@ -15,7 +15,7 @@ const ROLE_LABELS: Record<Role, string> = {
 const ROLE_STYLES: Record<Role, string> = {
   super_admin: 'bg-violet-wash text-violet ring-violet/25',
   dept_admin: 'bg-info-wash text-info ring-info/25',
-  field_engineer: 'bg-accent-wash text-accent ring-accent/40',
+  field_engineer: 'bg-brand-wash text-brand ring-brand/40',
 }
 
 function RoleBadge({ role }: { role: Role }) {
@@ -241,7 +241,7 @@ export function AdminUsers() {
               </>
             ) : (
               <div className="sm:col-span-2">
-                <p className="text-sm text-muted">
+                <p className="text-sm text-subtle">
                   Added to <span className="font-medium text-ink-soft">{profile?.departments?.name}</span> as a
                   field engineer.
                 </p>
@@ -264,7 +264,7 @@ export function AdminUsers() {
         </h2>
 
         {loading ? (
-          <p className="flex items-center gap-2 text-sm text-muted" role="status">
+          <p className="flex items-center gap-2 text-sm text-subtle" role="status">
             <Spinner />
             Loading…
           </p>
@@ -276,7 +276,7 @@ export function AdminUsers() {
         ) : (
           <div className="overflow-x-auto rounded-xl border border-line bg-panel">
             <table className="w-full text-sm">
-              <thead className="border-b border-line bg-raised text-left text-xs uppercase tracking-wide text-muted">
+              <thead className="border-b border-line bg-raised text-left text-xs uppercase tracking-wide text-subtle">
                 <tr>
                   <th scope="col" className="px-4 py-2.5 font-medium">Name</th>
                   <th scope="col" className="px-4 py-2.5 font-medium">Role</th>
@@ -288,26 +288,26 @@ export function AdminUsers() {
               </thead>
               <tbody className="divide-y divide-line">
                 {visibleUsers.map((user) => (
-                  <tr key={user.id} className={user.is_active ? '' : 'bg-raised text-muted'}>
+                  <tr key={user.id} className={user.is_active ? '' : 'bg-raised text-subtle'}>
                     <td className="px-4 py-3">
                       <span className="font-medium text-ink">{user.full_name}</span>
-                      {user.phone ? <p className="text-xs text-muted">{user.phone}</p> : null}
+                      {user.phone ? <p className="text-xs text-subtle">{user.phone}</p> : null}
                     </td>
                     <td className="px-4 py-3">
                       <RoleBadge role={user.role} />
                     </td>
                     <td className="px-4 py-3 text-ink-soft">{user.departments?.name ?? '—'}</td>
-                    <td className="px-4 py-3 tabular-nums text-muted">{formatDate(user.created_at)}</td>
+                    <td className="px-4 py-3 tabular-nums text-subtle">{formatDate(user.created_at)}</td>
                     <td className="px-4 py-3">
                       {user.is_active ? (
                         <span className="text-ok">Active</span>
                       ) : (
-                        <span className="text-muted">Deactivated</span>
+                        <span className="text-subtle">Deactivated</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {user.id === profile?.id ? (
-                        <span className="text-xs text-muted">You</span>
+                        <span className="text-xs text-subtle">You</span>
                       ) : (
                         <Button variant="secondary" size="sm" onClick={() => toggleActive(user)}>
                           {user.is_active ? 'Deactivate' : 'Reactivate'}

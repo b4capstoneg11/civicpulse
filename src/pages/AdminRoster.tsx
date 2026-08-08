@@ -241,7 +241,7 @@ export function AdminRoster() {
       ) : null}
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm text-muted" role="status">
+        <p className="flex items-center gap-2 text-sm text-subtle" role="status">
           <Spinner />
           Loading roster…
         </p>
@@ -256,7 +256,7 @@ export function AdminRoster() {
         <>
           <section className="mb-8 rounded-xl border border-line bg-panel p-5">
             <h2 className="mb-1 text-sm font-semibold text-ink">Add a Shift</h2>
-            <p className="mb-4 text-sm text-muted text-pretty">
+            <p className="mb-4 text-sm text-subtle text-pretty">
               Pick an engineer and the days they work. Use the grid below for quick {DEFAULT_START}–
               {DEFAULT_END} toggles.
             </p>
@@ -292,7 +292,7 @@ export function AdminRoster() {
                     type="time"
                     value={formStart}
                     onChange={(e) => setFormStart(e.target.value)}
-                    className="w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-ink [color-scheme:light] transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                    className="w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-ink [color-scheme:light] transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
                   />
                 </div>
 
@@ -305,7 +305,7 @@ export function AdminRoster() {
                     type="time"
                     value={formEnd}
                     onChange={(e) => setFormEnd(e.target.value)}
-                    className="w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-ink [color-scheme:light] transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                    className="w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-ink [color-scheme:light] transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
                   />
                 </div>
               </div>
@@ -316,9 +316,9 @@ export function AdminRoster() {
                   {WEEKDAYS.map((day, weekday) => (
                     <label
                       key={day}
-                      className={`cursor-pointer rounded-lg border px-3 py-1.5 text-sm transition-colors [touch-action:manipulation] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent has-[:focus-visible]:ring-offset-2 ${
+                      className={`cursor-pointer rounded-lg border px-3 py-1.5 text-sm transition-colors [touch-action:manipulation] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand has-[:focus-visible]:ring-offset-2 ${
                         formDays.includes(weekday)
-                          ? 'border-accent bg-accent-wash text-accent-hi'
+                          ? 'border-brand bg-brand-wash text-brand-hi'
                           : 'border-line bg-panel text-ink-soft hover:border-line-strong'
                       }`}
                     >
@@ -349,7 +349,7 @@ export function AdminRoster() {
               <caption className="sr-only">
                 Weekly shift roster. Select a day to toggle whether that engineer works it.
               </caption>
-              <thead className="border-b border-line bg-raised text-xs uppercase tracking-wide text-muted">
+              <thead className="border-b border-line bg-raised text-xs uppercase tracking-wide text-subtle">
                 <tr>
                   <th scope="col" className="px-4 py-2.5 text-left font-medium">Engineer</th>
                   <th scope="col" className="px-3 py-2.5 text-center font-medium">Open</th>
@@ -357,7 +357,7 @@ export function AdminRoster() {
                     <th
                       key={day}
                       scope="col"
-                      className={`px-3 py-2.5 text-center font-medium ${index === todayIst ? 'text-accent' : ''}`}
+                      className={`px-3 py-2.5 text-center font-medium ${index === todayIst ? 'text-brand' : ''}`}
                     >
                       {day}
                     </th>
@@ -375,7 +375,7 @@ export function AdminRoster() {
                         </span>
                       ) : null}
                       {engineer.profile.is_active ? null : (
-                        <span className="ml-2 text-xs text-muted">Deactivated</span>
+                        <span className="ml-2 text-xs text-subtle">Deactivated</span>
                       )}
                     </td>
                     <td className="px-3 py-3 text-center tabular-nums text-ink-soft">
@@ -392,10 +392,10 @@ export function AdminRoster() {
                             disabled={savingCell === cellKey}
                             aria-pressed={Boolean(shift)}
                             aria-label={`${engineer.profile.full_name}, ${day}`}
-                            className={`h-8 w-full min-w-14 rounded-md border text-xs font-medium transition-colors [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 ${
+                            className={`h-8 w-full min-w-14 rounded-md border text-xs font-medium transition-colors [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:opacity-50 ${
                               shift
-                                ? 'border-accent bg-accent text-canvas hover:bg-accent-hi'
-                                : 'border-line bg-panel text-muted hover:border-line-strong'
+                                ? 'border-brand bg-brand text-canvas hover:bg-brand-hi'
+                                : 'border-line bg-panel text-subtle hover:border-line-strong'
                             }`}
                           >
                             {shift ? '✓' : '—'}
@@ -411,7 +411,7 @@ export function AdminRoster() {
 
           <section className="mt-8">
             <h2 className="mb-3 text-sm font-semibold text-ink">Shift Hours</h2>
-            <p className="mb-4 text-sm text-muted text-pretty">
+            <p className="mb-4 text-sm text-subtle text-pretty">
               Every shift defaults to {DEFAULT_START}–{DEFAULT_END} IST. Adjust an individual day here.
             </p>
 
@@ -427,24 +427,24 @@ export function AdminRoster() {
                     >
                       <span className="min-w-0 flex-1 truncate text-sm text-ink-soft">
                         {engineer.profile.full_name}
-                        <span className="ml-2 text-muted">{WEEKDAYS[shift.weekday]}</span>
+                        <span className="ml-2 text-subtle">{WEEKDAYS[shift.weekday]}</span>
                       </span>
-                      <label className="flex items-center gap-2 text-xs text-muted">
+                      <label className="flex items-center gap-2 text-xs text-subtle">
                         Start
                         <input
                           type="time"
                           defaultValue={shift.start_time.slice(0, 5)}
                           onBlur={(e) => updateTimes(shift, e.target.value, shift.end_time.slice(0, 5))}
-                          className="rounded-md border border-line px-2 py-1 text-sm text-ink [color-scheme:light] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                          className="rounded-md border border-line px-2 py-1 text-sm text-ink [color-scheme:light] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                         />
                       </label>
-                      <label className="flex items-center gap-2 text-xs text-muted">
+                      <label className="flex items-center gap-2 text-xs text-subtle">
                         End
                         <input
                           type="time"
                           defaultValue={shift.end_time.slice(0, 5)}
                           onBlur={(e) => updateTimes(shift, shift.start_time.slice(0, 5), e.target.value)}
-                          className="rounded-md border border-line px-2 py-1 text-sm text-ink [color-scheme:light] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                          className="rounded-md border border-line px-2 py-1 text-sm text-ink [color-scheme:light] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                         />
                       </label>
                     </div>
