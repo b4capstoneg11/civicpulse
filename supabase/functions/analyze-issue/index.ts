@@ -39,18 +39,10 @@ const JSON_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'application/json' }
 // of 64 hash bits, and two unrelated images average 32. There is no threshold
 // that separates those. Coordinates do separate them, so proximity decides, and
 // the hash is kept only for the case it is actually good at.
-const SAME_SPOT_METERS = 30
 const SAME_ISSUE_METERS = 120
 const HAMMING_DUPLICATE_THRESHOLD = 10
 const DUPLICATE_LOOKBACK_DAYS = 30
 const OPEN_STATUSES = ['created', 'assigned', 'in_progress']
-
-// The buckets the classifier retreats to when the photo is ambiguous. The same
-// broken kerb has already been filed here as both `pothole` and
-// `damaged_infrastructure` from 3 m apart on one day, so requiring exact type
-// equality would let that pair through. They match anything — but only at
-// SAME_SPOT_METERS, where the reports are certainly one physical thing.
-const CATCH_ALL_TYPES = ['other', 'damaged_infrastructure']
 
 interface RequestBody {
   photoBase64: string
@@ -113,11 +105,22 @@ function metersBetween(aLat: number, aLon: number, bLat: number, bLon: number): 
   return 2 * R * Math.asin(Math.sqrt(h))
 }
 
-function typesMatch(a: string, b: string, meters: number): boolean {
-  if (a === b) return true
-  // A vague classification only overrides a specific one at touching distance.
-  return meters <= SAME_SPOT_METERS && (CATCH_ALL_TYPES.includes(a) || CATCH_ALL_TYPES.includes(b))
-}
+// Why dedup keys on the department and not on `issue_type`:
+//
+// `issue_type` is not stable. One burnt transformer, the same photo and the
+// same comment, classified six times, came back `streetlight` once, `other`
+// three times and `damaged_infrastructure` twice — a real object that does not
+// fit the six-value enum cleanly. `department_slug` was `electrical` all six
+// times. Keying on the type therefore keys on a coin flip: CP-000018 is stored
+// as `streetlight`, so a re-report landing on `other` could never match its own
+// ticket, and one landing on `damaged_infrastructure` matched the footpath
+// ticket 2 m away instead.
+//
+// The department is both stable and the thing that actually matters — two
+// reports the same crew would act on at the same spot are one job. It also
+// makes a cross-department merge impossible, so the footpath (public_works),
+// the pothole (roads) and the transformer (electrical) sharing one Dhakuria
+// junction stay three tickets.
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -160,6 +163,12 @@ Deno.serve(async (req) => {
     const response = await openai.chat.completions.create({
       model: MODEL,
       max_tokens: 1024,
+      // Classification is a lookup, not a piece of writing — sampling variety is
+      // pure downside here. At the default temperature one transformer photo
+      // came back `streetlight`, `other` and `damaged_infrastructure` across six
+      // identical requests, which is also why dedup no longer keys on the type.
+      // This does not make the API deterministic, only much steadier.
+      temperature: 0,
       // Strict JSON Schema is what guarantees a parseable response here. Don't
       // swap this for asking the model to emit JSON in prose.
       response_format: {
@@ -203,14 +212,16 @@ Deno.serve(async (req) => {
 
     const classification = JSON.parse(message.content) as Classification
 
-    // Dedup runs against open tickets from the last DUPLICATE_LOOKBACK_DAYS.
-    // Two independent signals, either of which is enough:
-    //   1. an open ticket of a matching type within SAME_ISSUE_METERS, which is
-    //      the "same issue, same place" case residents actually hit;
-    //   2. a near-identical photo of the same type anywhere, which catches a
-    //      resubmission of one image (a double-tap, a retry, a forward).
+    // Dedup runs against open tickets routed to the same department in the last
+    // DUPLICATE_LOOKBACK_DAYS. Two independent signals, either of which is
+    // enough:
+    //   1. one within SAME_ISSUE_METERS, which is the "same issue, same place"
+    //      case residents actually hit;
+    //   2. a near-identical photo anywhere, which catches a resubmission of one
+    //      image (a double-tap, a retry, a forward).
     const since = new Date(Date.now() - DUPLICATE_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
-    const COLUMNS = 'ticket_number, status, issue_type, image_signature, latitude, longitude, created_at'
+    const COLUMNS =
+      'ticket_number, status, issue_type, image_signature, latitude, longitude, created_at, departments!inner(slug)'
 
     const hasCoords = typeof latitude === 'number' && typeof longitude === 'number'
 
@@ -227,6 +238,7 @@ Deno.serve(async (req) => {
           .select(COLUMNS)
           .in('status', OPEN_STATUSES)
           .gte('created_at', since)
+          .eq('departments.slug', classification.department_slug)
           .gte('latitude', latitude! - latDelta)
           .lte('latitude', latitude! + latDelta)
           .gte('longitude', longitude! - lonDelta)
@@ -235,34 +247,43 @@ Deno.serve(async (req) => {
           .limit(100)
       : null
 
-    const sameTypeQuery = supabaseAdmin
+    const samePhotoQuery = supabaseAdmin
       .from('issues')
       .select(COLUMNS)
       .in('status', OPEN_STATUSES)
       .gte('created_at', since)
-      .eq('issue_type', classification.issue_type)
+      .eq('departments.slug', classification.department_slug)
       .order('created_at', { ascending: true })
       .limit(200)
 
-    const [nearbyResult, sameTypeResult] = await Promise.all([nearbyQuery, sameTypeQuery])
+    const [nearbyResult, samePhotoResult] = await Promise.all([nearbyQuery, samePhotoQuery])
 
     // Fail open: a dedup lookup that errors must not block a resident's report.
     // Log it rather than swallowing it — this check going quietly dead is
     // exactly the failure that is invisible from the outside.
     if (nearbyResult?.error) console.error('dedup nearby query failed', nearbyResult.error)
-    if (sameTypeResult.error) console.error('dedup same-type query failed', sameTypeResult.error)
+    if (samePhotoResult.error) console.error('dedup photo query failed', samePhotoResult.error)
     if (!hasCoords) console.warn('dedup: request carried no coordinates, location check skipped')
 
-    // Candidates arrive oldest-first, so a match points at the original ticket —
-    // the one carrying the full history — rather than a later copy of it.
     let match:
       | { ticket: string; status: string; reportedAt: string; meters: number | null; on: 'location' | 'photo' }
       | undefined
 
-    for (const candidate of nearbyResult?.data ?? []) {
-      const meters = metersBetween(latitude!, longitude!, candidate.latitude, candidate.longitude)
-      if (meters > SAME_ISSUE_METERS) continue
-      if (!typesMatch(classification.issue_type, candidate.issue_type, meters)) continue
+    // Nearest wins, not oldest. A department can have several tickets open on
+    // one street, and the resident is standing at exactly one of them — the
+    // ticket 0 m away is the one they are re-reporting. Ties break to the older
+    // ticket, which is the original and carries the fuller history.
+    const nearby = (nearbyResult?.data ?? [])
+      .map((candidate) => ({
+        candidate,
+        meters: metersBetween(latitude!, longitude!, candidate.latitude, candidate.longitude),
+      }))
+      // The bounding box is square; this is where the round radius is applied.
+      .filter(({ meters }) => meters <= SAME_ISSUE_METERS)
+      .sort((a, b) => a.meters - b.meters || a.candidate.created_at.localeCompare(b.candidate.created_at))
+
+    if (nearby.length > 0) {
+      const { candidate, meters } = nearby[0]
       match = {
         ticket: candidate.ticket_number,
         status: candidate.status,
@@ -270,11 +291,10 @@ Deno.serve(async (req) => {
         meters: Math.round(meters),
         on: 'location',
       }
-      break
     }
 
     if (!match) {
-      for (const candidate of sameTypeResult.data ?? []) {
+      for (const candidate of samePhotoResult.data ?? []) {
         if (hammingDistance(imageSignature, candidate.image_signature) > HAMMING_DUPLICATE_THRESHOLD) {
           continue
         }
