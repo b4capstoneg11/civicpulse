@@ -52,7 +52,7 @@ function safeDate(value: unknown): string | null {
 
 interface Caller {
   id: string
-  role: 'super_admin' | 'dept_admin' | 'field_engineer'
+  role: 'super_admin' | 'readonly_admin' | 'dept_admin' | 'field_engineer'
   department_id: string | null
   full_name: string
   departmentName: string | null
@@ -64,8 +64,13 @@ interface Caller {
  */
 // deno-lint-ignore no-explicit-any
 function scoped(query: any, caller: Caller) {
-  if (caller.role === 'super_admin') return query
+  // A readonly_admin reads everything a super admin reads. Every tool here only
+  // retrieves, so read-only needs no separate treatment beyond the scope.
+  if (caller.role === 'super_admin' || caller.role === 'readonly_admin') return query
   if (caller.role === 'dept_admin') return query.eq('department_id', caller.department_id)
+  // Anything else, including a role added later and not handled above, is
+  // narrowed to the caller's own tickets. Failing closed is the only safe
+  // default for the one function that decides what the model may see.
   return query.eq('assigned_to', caller.id) // field_engineer
 }
 
@@ -301,7 +306,7 @@ async function runTool(name: string, args: any, admin: any, caller: Caller): Pro
 
 function systemPrompt(caller: Caller): string {
   const scope =
-    caller.role === 'super_admin'
+    caller.role === 'super_admin' || caller.role === 'readonly_admin'
       ? 'You can see tickets across every department.'
       : caller.role === 'dept_admin'
         ? `You can see only tickets belonging to ${caller.departmentName ?? 'their department'}. You cannot see other departments at all.`

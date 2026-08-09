@@ -23,11 +23,18 @@ interface Turn {
 // difference between the three is stated, not just implied.
 const SCOPE_NOTE: Record<string, string> = {
   super_admin: 'all departments',
+  readonly_admin: 'all departments, read-only',
   dept_admin: 'your department only',
   field_engineer: 'your assigned tickets only',
 }
 
 const SUGGESTIONS: Record<string, string[]> = {
+  readonly_admin: [
+    'How many tickets are open, broken down by department?',
+    'Which department has the biggest backlog right now?',
+    'Show me high-priority tickets that are still unassigned',
+    'How has ticket volume changed month by month?',
+  ],
   super_admin: [
     'How many tickets are open, broken down by department?',
     'Which department has the biggest backlog right now?',
