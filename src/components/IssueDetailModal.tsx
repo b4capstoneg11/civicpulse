@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { NavigationIcon } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,7 @@ import { toast } from 'sonner'
 import { Alert, Button, Coordinates, Field, Textarea } from './ui'
 import { FieldSelect } from './FieldSelect'
 import { formatDateTime, joinParts } from '../lib/format'
+import { mapsDirectionsUrl } from '../lib/geocode'
 import { STATUS_LABELS } from '../lib/labels'
 import { isOnShiftNow, shiftSummary } from '../lib/roster'
 import type { Issue, IssueStatus, IssueStatusHistoryEntry, Profile, RosterShift } from '../lib/types'
@@ -343,6 +345,18 @@ export function IssueDetailModal({
           {/* Crews navigate to the spot, and a landmark like "opposite the market"
               only narrows it so far. The exact position is on the row already. */}
           <Coordinates lat={issue.latitude} lon={issue.longitude} />
+          <a
+            href={mapsDirectionsUrl(issue.latitude, issue.longitude)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded text-xs font-medium text-brand underline-offset-2 transition-colors hover:text-brand-hi hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+          >
+            <NavigationIcon aria-hidden="true" className="h-3 w-3" />
+            Directions in Google Maps
+            {/* The new tab is a surprise unless it is announced; the icon cannot
+                carry that, so the accessible name does. */}
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
         </div>
 
         <section className="mb-5">

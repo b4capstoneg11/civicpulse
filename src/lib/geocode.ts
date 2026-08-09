@@ -1,3 +1,21 @@
+/**
+ * A Google Maps link that starts navigation to a reported issue.
+ *
+ * `dir/?api=1` opens directions rather than a dropped pin, which is what a crew
+ * on the way to a job actually needs — on a phone it hands off to the Maps app
+ * and starts routing from wherever they are. Keyless, and the only Google
+ * dependency in the product: a URL, not an API.
+ *
+ * The destination is coordinates, never the geocoded address. The address can be
+ * null when Nominatim finds nothing, and even when present it is a suburb-level
+ * name that would route a crew to the middle of an area rather than to the
+ * pothole. Six decimals to match what the ticket displays.
+ */
+export function mapsDirectionsUrl(lat: number, lon: number): string {
+  const destination = encodeURIComponent(`${lat.toFixed(6)},${lon.toFixed(6)}`)
+  return `https://www.google.com/maps/dir/?api=1&destination=${destination}`
+}
+
 export interface ReverseGeocodeResult {
   pincode: string | null
   area: string | null
