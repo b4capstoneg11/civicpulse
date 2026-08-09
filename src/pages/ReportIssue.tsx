@@ -9,19 +9,18 @@ import { StatusBadge, TicketNumber } from '../components/StatusBadge'
 import type { ClassificationResult, DuplicateMatch, ReporterChannel } from '../lib/types'
 
 /**
- * Says which of the two dedup signals fired, because the two mean different
- * things to a resident: "someone already flagged this spot" versus "we have
- * this exact photo". Falls back to the vaguer wording if the edge function
- * predates the richer response.
+ * A merge only ever happens between reports at the same place, so the message
+ * can say so plainly. Falls back to vaguer wording if the edge function predates
+ * the richer response and sent no detail.
  */
 function duplicateMessage(match: DuplicateMatch | null): string {
   if (!match) {
     return 'Someone nearby already reported the same issue. Your report is linked to theirs, so you can track it too.'
   }
-  const raised = `already raised on ${formatDate(match.reportedAt)}`
-  return match.matchedOn === 'location'
-    ? `A ticket for this issue at this location was ${raised} and is still open. Your report is linked to it — use the ticket number below to track progress.`
-    : `This matches a report we already have on file, ${raised}. Your report is linked to it — use the ticket number below to track progress.`
+  return (
+    `A ticket for this issue at this location was already raised on ${formatDate(match.reportedAt)} ` +
+    'and is still open. Your report is linked to it — use the ticket number below to track progress.'
+  )
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -169,10 +168,7 @@ export function ReportIssue() {
           await supabase.from('issue_status_history').insert({
             issue_id: original.id,
             status: original.status,
-            note:
-              classification.duplicateOf?.matchedOn === 'location'
-                ? 'Reported again by another resident from the same location (merged as duplicate)'
-                : 'Also reported by another resident (merged as duplicate)',
+            note: 'Reported again by another resident from the same location (merged as duplicate)',
             actor: 'ai',
           })
         }

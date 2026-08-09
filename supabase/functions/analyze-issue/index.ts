@@ -31,16 +31,18 @@ const CORS_HEADERS = {
 
 const JSON_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'application/json' }
 
-// Duplicate detection. GPS is the primary signal, not the photo.
+// Duplicate detection is decided by location, and only by location.
 //
-// A perceptual hash only recognises the *same image file* resubmitted — it does
-// not recognise the same object photographed twice. Measured against this
-// database: two reports of one pothole taken 5 m and minutes apart differ by 29
-// of 64 hash bits, and two unrelated images average 32. There is no threshold
-// that separates those. Coordinates do separate them, so proximity decides, and
-// the hash is kept only for the case it is actually good at.
+// The photo's perceptual hash was a signal here and is not any more. It cannot
+// recognise the same object photographed twice — measured against this
+// database, two reports of one pothole 5 m and minutes apart differ by 29 of 64
+// bits, and two unrelated images average 32 — so it only ever recognised the
+// same image *file* coming back. Matching on that carried no geographic bound:
+// one photo reported in Delhi merged into a Kolkata ticket, and the Delhi issue
+// would never have been worked. Constraining it to the radius would have made
+// it a strict subset of the location check, so it earns nothing and is gone.
+// The client still stores `image_signature` on the row; nothing matches on it.
 const SAME_ISSUE_METERS = 120
-const HAMMING_DUPLICATE_THRESHOLD = 10
 const DUPLICATE_LOOKBACK_DAYS = 30
 const OPEN_STATUSES = ['created', 'assigned', 'in_progress']
 
@@ -53,7 +55,6 @@ interface RequestBody {
   city?: string
   latitude?: number
   longitude?: number
-  imageSignature: string
 }
 
 interface Classification {
@@ -82,16 +83,6 @@ const CLASSIFICATION_SCHEMA = {
   required: ['issue_type', 'department_slug', 'priority', 'confidence', 'summary'],
   additionalProperties: false,
 } as const
-
-function hammingDistance(hexA: string, hexB: string): number {
-  if (!hexA || !hexB || hexA.length !== hexB.length) return Number.MAX_SAFE_INTEGER
-  let distance = 0
-  for (let i = 0; i < hexA.length; i++) {
-    const xor = parseInt(hexA[i], 16) ^ parseInt(hexB[i], 16)
-    distance += xor.toString(2).split('1').length - 1
-  }
-  return distance
-}
 
 /** Great-circle distance in metres. */
 function metersBetween(aLat: number, aLon: number, bLat: number, bLon: number): number {
@@ -133,10 +124,9 @@ Deno.serve(async (req) => {
 
   try {
     const body: RequestBody = await req.json()
-    const { photoBase64, mediaType, comment, landmark, area, city, latitude, longitude, imageSignature } =
-      body
+    const { photoBase64, mediaType, comment, landmark, area, city, latitude, longitude } = body
 
-    if (!photoBase64 || !comment || !imageSignature) {
+    if (!photoBase64 || !comment) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400,
         headers: JSON_HEADERS,
@@ -212,16 +202,14 @@ Deno.serve(async (req) => {
 
     const classification = JSON.parse(message.content) as Classification
 
-    // Dedup runs against open tickets routed to the same department in the last
-    // DUPLICATE_LOOKBACK_DAYS. Two independent signals, either of which is
-    // enough:
-    //   1. one within SAME_ISSUE_METERS, which is the "same issue, same place"
-    //      case residents actually hit;
-    //   2. a near-identical photo anywhere, which catches a resubmission of one
-    //      image (a double-tap, a retry, a forward).
+    // Dedup is a question about one place: is this the issue already open here?
+    // A ticket matches when it is open, routed to the same department, filed in
+    // the last DUPLICATE_LOOKBACK_DAYS, and within SAME_ISSUE_METERS. Distance
+    // is a required condition, not one of several ways to match, so a report
+    // from Delhi can never merge into a Kolkata ticket.
     const since = new Date(Date.now() - DUPLICATE_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
     const COLUMNS =
-      'ticket_number, status, issue_type, image_signature, latitude, longitude, created_at, departments!inner(slug)'
+      'ticket_number, status, latitude, longitude, created_at, departments!inner(slug)'
 
     const hasCoords = typeof latitude === 'number' && typeof longitude === 'number'
 
@@ -247,27 +235,17 @@ Deno.serve(async (req) => {
           .limit(100)
       : null
 
-    const samePhotoQuery = supabaseAdmin
-      .from('issues')
-      .select(COLUMNS)
-      .in('status', OPEN_STATUSES)
-      .gte('created_at', since)
-      .eq('departments.slug', classification.department_slug)
-      .order('created_at', { ascending: true })
-      .limit(200)
-
-    const [nearbyResult, samePhotoResult] = await Promise.all([nearbyQuery, samePhotoQuery])
+    const nearbyResult = await nearbyQuery
 
     // Fail open: a dedup lookup that errors must not block a resident's report.
     // Log it rather than swallowing it — this check going quietly dead is
     // exactly the failure that is invisible from the outside.
     if (nearbyResult?.error) console.error('dedup nearby query failed', nearbyResult.error)
-    if (samePhotoResult.error) console.error('dedup photo query failed', samePhotoResult.error)
-    if (!hasCoords) console.warn('dedup: request carried no coordinates, location check skipped')
+    // No coordinates means no way to establish "same place", and without that
+    // there is nothing left to match on, so the report becomes a new ticket.
+    if (!hasCoords) console.warn('dedup: request carried no coordinates, skipped')
 
-    let match:
-      | { ticket: string; status: string; reportedAt: string; meters: number | null; on: 'location' | 'photo' }
-      | undefined
+    let match: { ticket: string; status: string; reportedAt: string; meters: number } | undefined
 
     // Nearest wins, not oldest. A department can have several tickets open on
     // one street, and the resident is standing at exactly one of them — the
@@ -289,25 +267,6 @@ Deno.serve(async (req) => {
         status: candidate.status,
         reportedAt: candidate.created_at,
         meters: Math.round(meters),
-        on: 'location',
-      }
-    }
-
-    if (!match) {
-      for (const candidate of samePhotoResult.data ?? []) {
-        if (hammingDistance(imageSignature, candidate.image_signature) > HAMMING_DUPLICATE_THRESHOLD) {
-          continue
-        }
-        // No distance: this match did not use one, and the two reports can be
-        // kilometres apart, which would read as nonsense next to "same location".
-        match = {
-          ticket: candidate.ticket_number,
-          status: candidate.status,
-          reportedAt: candidate.created_at,
-          meters: null,
-          on: 'photo',
-        }
-        break
       }
     }
 
@@ -323,7 +282,6 @@ Deno.serve(async (req) => {
             status: match.status,
             reportedAt: match.reportedAt,
             distanceMeters: match.meters,
-            matchedOn: match.on,
           },
         }),
         { headers: JSON_HEADERS }

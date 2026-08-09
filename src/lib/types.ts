@@ -101,14 +101,13 @@ export interface EngineerWorkload {
   openCount: number
 }
 
-/** The existing ticket a report was merged into, and why it matched. */
+/** The existing ticket a report was merged into. Only ever matched by location. */
 export interface DuplicateMatch {
   ticketNumber: string
   status: IssueStatus
   reportedAt: string
-  /** Distance to the original report; null when the match came from the photo alone. */
-  distanceMeters: number | null
-  matchedOn: 'location' | 'photo'
+  /** How far the new report was from the original. */
+  distanceMeters: number
 }
 
 export interface ClassificationResult {
