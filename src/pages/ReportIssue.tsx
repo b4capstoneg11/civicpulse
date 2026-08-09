@@ -3,10 +3,26 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { computeImageHash } from '../lib/imageHash'
 import { reverseGeocode } from '../lib/geocode'
-import { joinParts } from '../lib/format'
+import { formatDate, formatRelative, joinParts } from '../lib/format'
 import { Alert, Button, Field, Input, Textarea } from '../components/ui'
-import { TicketNumber } from '../components/StatusBadge'
-import type { ClassificationResult, ReporterChannel } from '../lib/types'
+import { StatusBadge, TicketNumber } from '../components/StatusBadge'
+import type { ClassificationResult, DuplicateMatch, ReporterChannel } from '../lib/types'
+
+/**
+ * Says which of the two dedup signals fired, because the two mean different
+ * things to a resident: "someone already flagged this spot" versus "we have
+ * this exact photo". Falls back to the vaguer wording if the edge function
+ * predates the richer response.
+ */
+function duplicateMessage(match: DuplicateMatch | null): string {
+  if (!match) {
+    return 'Someone nearby already reported the same issue. Your report is linked to theirs, so you can track it too.'
+  }
+  const raised = `already raised on ${formatDate(match.reportedAt)}`
+  return match.matchedOn === 'location'
+    ? `A ticket for this issue at this location was ${raised} and is still open. Your report is linked to it — use the ticket number below to track progress.`
+    : `This matches a report we already have on file, ${raised}. Your report is linked to it — use the ticket number below to track progress.`
+}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -48,6 +64,7 @@ export function ReportIssue() {
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [resultTicket, setResultTicket] = useState<string | null>(null)
+  const [duplicateOf, setDuplicateOf] = useState<DuplicateMatch | null>(null)
 
   // Object URLs leak unless revoked, so the preview is tied to the file's lifetime
   // rather than recreated on every render.
@@ -128,6 +145,10 @@ export function ReportIssue() {
             landmark: landmark || undefined,
             area: address?.area ?? undefined,
             city: address?.city ?? undefined,
+            // Duplicate detection keys off these. A reverse-geocoded area name is
+            // too coarse and too unstable to identify a spot on its own.
+            latitude: location!.lat,
+            longitude: location!.lon,
             imageSignature,
           },
         })
@@ -138,20 +159,26 @@ export function ReportIssue() {
       if (classification.duplicate && classification.duplicateOfTicket) {
         const { data: original } = await supabase
           .from('issues')
-          .select('id')
+          .select('id, status')
           .eq('ticket_number', classification.duplicateOfTicket)
           .single()
 
         if (original) {
+          // The audit row has to keep the ticket's own status: this timeline entry
+          // records a second sighting, not a transition back to `created`.
           await supabase.from('issue_status_history').insert({
             issue_id: original.id,
-            status: 'created',
-            note: 'Also reported by another resident (merged as duplicate)',
+            status: original.status,
+            note:
+              classification.duplicateOf?.matchedOn === 'location'
+                ? 'Reported again by another resident from the same location (merged as duplicate)'
+                : 'Also reported by another resident (merged as duplicate)',
             actor: 'ai',
           })
         }
 
         setResultTicket(classification.duplicateOfTicket)
+        setDuplicateOf(classification.duplicateOf ?? null)
         setStep('duplicate')
         return
       }
@@ -236,12 +263,20 @@ export function ReportIssue() {
         </h1>
         <p className="mb-6 text-ink-soft text-pretty">
           {isDuplicate
-            ? 'Someone nearby already reported the same issue. Your report is linked to theirs, so you can track it too.'
+            ? duplicateMessage(duplicateOf)
             : 'Your ticket has been created and routed to the right department.'}
         </p>
         <div className="mb-6 rounded-xl border border-brand/30 bg-brand-wash px-6 py-4">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-brand">Ticket Number</p>
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-brand">
+            {isDuplicate ? 'Existing Ticket Number' : 'Ticket Number'}
+          </p>
           <TicketNumber value={resultTicket ?? ''} className="text-2xl font-bold text-brand-hi" />
+          {isDuplicate && duplicateOf ? (
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-ink-soft">
+              <StatusBadge status={duplicateOf.status} />
+              <span>Reported {formatRelative(duplicateOf.reportedAt)}</span>
+            </div>
+          ) : null}
         </div>
         <Link
           to={`/track?ticket=${resultTicket}`}

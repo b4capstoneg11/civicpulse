@@ -31,8 +31,26 @@ const CORS_HEADERS = {
 
 const JSON_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'application/json' }
 
+// Duplicate detection. GPS is the primary signal, not the photo.
+//
+// A perceptual hash only recognises the *same image file* resubmitted — it does
+// not recognise the same object photographed twice. Measured against this
+// database: two reports of one pothole taken 5 m and minutes apart differ by 29
+// of 64 hash bits, and two unrelated images average 32. There is no threshold
+// that separates those. Coordinates do separate them, so proximity decides, and
+// the hash is kept only for the case it is actually good at.
+const SAME_SPOT_METERS = 30
+const SAME_ISSUE_METERS = 120
 const HAMMING_DUPLICATE_THRESHOLD = 10
 const DUPLICATE_LOOKBACK_DAYS = 30
+const OPEN_STATUSES = ['created', 'assigned', 'in_progress']
+
+// The buckets the classifier retreats to when the photo is ambiguous. The same
+// broken kerb has already been filed here as both `pothole` and
+// `damaged_infrastructure` from 3 m apart on one day, so requiring exact type
+// equality would let that pair through. They match anything — but only at
+// SAME_SPOT_METERS, where the reports are certainly one physical thing.
+const CATCH_ALL_TYPES = ['other', 'damaged_infrastructure']
 
 interface RequestBody {
   photoBase64: string
@@ -41,6 +59,8 @@ interface RequestBody {
   landmark?: string
   area?: string
   city?: string
+  latitude?: number
+  longitude?: number
   imageSignature: string
 }
 
@@ -72,13 +92,31 @@ const CLASSIFICATION_SCHEMA = {
 } as const
 
 function hammingDistance(hexA: string, hexB: string): number {
-  if (hexA.length !== hexB.length) return Number.MAX_SAFE_INTEGER
+  if (!hexA || !hexB || hexA.length !== hexB.length) return Number.MAX_SAFE_INTEGER
   let distance = 0
   for (let i = 0; i < hexA.length; i++) {
     const xor = parseInt(hexA[i], 16) ^ parseInt(hexB[i], 16)
     distance += xor.toString(2).split('1').length - 1
   }
   return distance
+}
+
+/** Great-circle distance in metres. */
+function metersBetween(aLat: number, aLon: number, bLat: number, bLon: number): number {
+  const R = 6_371_000
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const dLat = toRad(bLat - aLat)
+  const dLon = toRad(bLon - aLon)
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLon / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(h))
+}
+
+function typesMatch(a: string, b: string, meters: number): boolean {
+  if (a === b) return true
+  // A vague classification only overrides a specific one at touching distance.
+  return meters <= SAME_SPOT_METERS && (CATCH_ALL_TYPES.includes(a) || CATCH_ALL_TYPES.includes(b))
 }
 
 Deno.serve(async (req) => {
@@ -92,7 +130,8 @@ Deno.serve(async (req) => {
 
   try {
     const body: RequestBody = await req.json()
-    const { photoBase64, mediaType, comment, landmark, area, city, imageSignature } = body
+    const { photoBase64, mediaType, comment, landmark, area, city, latitude, longitude, imageSignature } =
+      body
 
     if (!photoBase64 || !comment || !imageSignature) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -164,32 +203,109 @@ Deno.serve(async (req) => {
 
     const classification = JSON.parse(message.content) as Classification
 
-    // Dedup: look at open issues in the same area within the lookback window,
-    // compare perceptual-hash distance.
+    // Dedup runs against open tickets from the last DUPLICATE_LOOKBACK_DAYS.
+    // Two independent signals, either of which is enough:
+    //   1. an open ticket of a matching type within SAME_ISSUE_METERS, which is
+    //      the "same issue, same place" case residents actually hit;
+    //   2. a near-identical photo of the same type anywhere, which catches a
+    //      resubmission of one image (a double-tap, a retry, a forward).
     const since = new Date(Date.now() - DUPLICATE_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
-    let dupQuery = supabaseAdmin
+    const COLUMNS = 'ticket_number, status, issue_type, image_signature, latitude, longitude, created_at'
+
+    const hasCoords = typeof latitude === 'number' && typeof longitude === 'number'
+
+    // Square bounding box first so Postgres can range-scan; the round radius is
+    // applied to the survivors below. cos() is clamped so a report near the
+    // poles cannot widen the box to the whole globe.
+    const latDelta = SAME_ISSUE_METERS / 111_320
+    const lonDelta =
+      SAME_ISSUE_METERS / (111_320 * Math.max(Math.cos((latitude ?? 0) * (Math.PI / 180)), 0.01))
+
+    const nearbyQuery = hasCoords
+      ? supabaseAdmin
+          .from('issues')
+          .select(COLUMNS)
+          .in('status', OPEN_STATUSES)
+          .gte('created_at', since)
+          .gte('latitude', latitude! - latDelta)
+          .lte('latitude', latitude! + latDelta)
+          .gte('longitude', longitude! - lonDelta)
+          .lte('longitude', longitude! + lonDelta)
+          .order('created_at', { ascending: true })
+          .limit(100)
+      : null
+
+    const sameTypeQuery = supabaseAdmin
       .from('issues')
-      .select('ticket_number, image_signature')
-      .in('status', ['created', 'assigned', 'in_progress'])
-      .eq('issue_type', classification.issue_type)
+      .select(COLUMNS)
+      .in('status', OPEN_STATUSES)
       .gte('created_at', since)
-      .limit(50)
+      .eq('issue_type', classification.issue_type)
+      .order('created_at', { ascending: true })
+      .limit(200)
 
-    if (area) dupQuery = dupQuery.eq('area', area)
+    const [nearbyResult, sameTypeResult] = await Promise.all([nearbyQuery, sameTypeQuery])
 
-    const { data: candidates } = await dupQuery
+    // Fail open: a dedup lookup that errors must not block a resident's report.
+    // Log it rather than swallowing it — this check going quietly dead is
+    // exactly the failure that is invisible from the outside.
+    if (nearbyResult?.error) console.error('dedup nearby query failed', nearbyResult.error)
+    if (sameTypeResult.error) console.error('dedup same-type query failed', sameTypeResult.error)
+    if (!hasCoords) console.warn('dedup: request carried no coordinates, location check skipped')
 
-    let duplicateOfTicket: string | undefined
-    for (const candidate of candidates ?? []) {
-      if (hammingDistance(imageSignature, candidate.image_signature) <= HAMMING_DUPLICATE_THRESHOLD) {
-        duplicateOfTicket = candidate.ticket_number
+    // Candidates arrive oldest-first, so a match points at the original ticket —
+    // the one carrying the full history — rather than a later copy of it.
+    let match:
+      | { ticket: string; status: string; reportedAt: string; meters: number | null; on: 'location' | 'photo' }
+      | undefined
+
+    for (const candidate of nearbyResult?.data ?? []) {
+      const meters = metersBetween(latitude!, longitude!, candidate.latitude, candidate.longitude)
+      if (meters > SAME_ISSUE_METERS) continue
+      if (!typesMatch(classification.issue_type, candidate.issue_type, meters)) continue
+      match = {
+        ticket: candidate.ticket_number,
+        status: candidate.status,
+        reportedAt: candidate.created_at,
+        meters: Math.round(meters),
+        on: 'location',
+      }
+      break
+    }
+
+    if (!match) {
+      for (const candidate of sameTypeResult.data ?? []) {
+        if (hammingDistance(imageSignature, candidate.image_signature) > HAMMING_DUPLICATE_THRESHOLD) {
+          continue
+        }
+        match = {
+          ticket: candidate.ticket_number,
+          status: candidate.status,
+          reportedAt: candidate.created_at,
+          meters: hasCoords
+            ? Math.round(metersBetween(latitude!, longitude!, candidate.latitude, candidate.longitude))
+            : null,
+          on: 'photo',
+        }
         break
       }
     }
 
-    if (duplicateOfTicket) {
+    if (match) {
       return new Response(
-        JSON.stringify({ duplicate: true, duplicateOfTicket }),
+        JSON.stringify({
+          duplicate: true,
+          // Kept alongside the richer object so a client deployed before this
+          // function still resolves the ticket it needs.
+          duplicateOfTicket: match.ticket,
+          duplicateOf: {
+            ticketNumber: match.ticket,
+            status: match.status,
+            reportedAt: match.reportedAt,
+            distanceMeters: match.meters,
+            matchedOn: match.on,
+          },
+        }),
         { headers: JSON_HEADERS }
       )
     }

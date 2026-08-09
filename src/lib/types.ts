@@ -101,9 +101,20 @@ export interface EngineerWorkload {
   openCount: number
 }
 
+/** The existing ticket a report was merged into, and why it matched. */
+export interface DuplicateMatch {
+  ticketNumber: string
+  status: IssueStatus
+  reportedAt: string
+  /** Distance to the original report; null when the match came from the photo alone. */
+  distanceMeters: number | null
+  matchedOn: 'location' | 'photo'
+}
+
 export interface ClassificationResult {
   duplicate: boolean
   duplicateOfTicket?: string
+  duplicateOf?: DuplicateMatch
   issue_type?: IssueType
   department_slug?: string
   priority?: Priority
