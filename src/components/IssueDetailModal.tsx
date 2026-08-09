@@ -66,6 +66,11 @@ export function IssueDetailModal({
   const [error, setError] = useState<string | null>(null)
 
 
+  // Bumped after every mutation below. The ticket id does not change while the
+  // modal is open, so without this the audit trail would still show the state
+  // from when it was opened while the badge above it had already moved on.
+  const [historyToken, setHistoryToken] = useState(0)
+
   useEffect(() => {
     supabase
       .from('issue_status_history')
@@ -73,7 +78,7 @@ export function IssueDetailModal({
       .eq('issue_id', issue.id)
       .order('created_at', { ascending: true })
       .then(({ data }) => setHistory(data ?? []))
-  }, [issue.id])
+  }, [issue.id, historyToken])
 
   // Reassignment targets: every active staff member in this ticket's department —
   // field engineers and staff admins alike. Deactivated accounts never appear.
@@ -197,6 +202,7 @@ export function IssueDetailModal({
     })
 
     setSavingChange(false)
+    setHistoryToken((n) => n + 1)
     toast.success(`Status changed to ${STATUS_LABELS[next]}.`)
     onUpdated()
   }
@@ -228,6 +234,7 @@ export function IssueDetailModal({
     })
 
     setSavingChange(false)
+    setHistoryToken((n) => n + 1)
     toast.success(engineerId ? `Reassigned to ${name}.` : 'Returned to the queue.')
     onUpdated()
   }

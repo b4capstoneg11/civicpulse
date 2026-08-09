@@ -60,7 +60,8 @@ function TicketRow({
 export function MyWork() {
   const { session, profile } = useAuth()
   const [issues, setIssues] = useState<Issue[]>([])
-  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null)
+  // Only a snapshot of the clicked row; `selectedIssue` below is what renders.
+  const [selectedSnapshot, setSelectedSnapshot] = useState<Issue | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshToken, setRefreshToken] = useState(0)
@@ -107,6 +108,14 @@ export function MyWork() {
   }, [userId])
 
   const refresh = useCallback(() => setRefreshToken((n) => n + 1), [])
+
+  // Same reason as the board: render the row as last loaded, not as clicked, so
+  // a status change reaches the open modal instead of leaving it showing — and
+  // acting on — the state from when it was opened. Falls back to the snapshot
+  // if the ticket leaves this list, which unassigning does.
+  const selectedIssue = selectedSnapshot
+    ? (issues.find((i) => i.id === selectedSnapshot.id) ?? selectedSnapshot)
+    : null
 
   const { open, done } = useMemo(
     () => ({
@@ -176,7 +185,7 @@ export function MyWork() {
             ) : (
               <ul className="space-y-3">
                 {open.map((issue) => (
-                  <TicketRow key={issue.id} issue={issue} onOpen={setSelectedIssue} onStart={startWork} />
+                  <TicketRow key={issue.id} issue={issue} onOpen={setSelectedSnapshot} onStart={startWork} />
                 ))}
               </ul>
             )}
@@ -189,7 +198,7 @@ export function MyWork() {
               </h2>
               <ul className="space-y-3">
                 {done.map((issue) => (
-                  <TicketRow key={issue.id} issue={issue} onOpen={setSelectedIssue} onStart={startWork} />
+                  <TicketRow key={issue.id} issue={issue} onOpen={setSelectedSnapshot} onStart={startWork} />
                 ))}
               </ul>
             </section>
@@ -201,7 +210,7 @@ export function MyWork() {
         <IssueDetailModal
           issue={selectedIssue}
           actorLabel={profile?.full_name ?? 'engineer'}
-          onClose={() => setSelectedIssue(null)}
+          onClose={() => setSelectedSnapshot(null)}
           onUpdated={refresh}
         />
       ) : null}

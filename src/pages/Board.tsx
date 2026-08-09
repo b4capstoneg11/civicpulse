@@ -28,7 +28,9 @@ export function Board() {
   const [issues, setIssues] = useState<Issue[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [engineers, setEngineers] = useState<Profile[]>([])
-  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null)
+  // Only a snapshot of the clicked card. What the modal actually renders is
+  // re-read from `issues` below — see `selectedIssue`.
+  const [selectedSnapshot, setSelectedSnapshot] = useState<Issue | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -141,7 +143,21 @@ export function Board() {
     return map
   }, [issues])
 
-  const handleSelect = useCallback((issue: Issue) => setSelectedIssue(issue), [])
+  // Re-reading the row by id is what keeps the modal honest: it renders what the
+  // board last loaded, not what was clicked. Holding the clicked object directly
+  // meant a status change updated the database and the board while the open
+  // modal still showed the old value — and the modal's "already in that status"
+  // guard, comparing against that stale value, then silently swallowed the next
+  // change. Realtime edits by other staff now reach the open modal too.
+  //
+  // Falls back to the snapshot when the row is missing from `issues`: reassigning
+  // while an assignee filter is set drops the ticket off the board, and the modal
+  // should stay put rather than vanish mid-interaction.
+  const selectedIssue = selectedSnapshot
+    ? (issues.find((i) => i.id === selectedSnapshot.id) ?? selectedSnapshot)
+    : null
+
+  const handleSelect = useCallback((issue: Issue) => setSelectedSnapshot(issue), [])
 
   const refresh = useCallback(() => setRefreshToken((n) => n + 1), [])
 
@@ -155,7 +171,7 @@ export function Board() {
 
     if (newStatus === 'resolved') {
       // Resolution needs a proof photo + comment, so collect it in the modal instead.
-      setSelectedIssue(issue)
+      setSelectedSnapshot(issue)
       return
     }
 
@@ -313,7 +329,7 @@ export function Board() {
         <IssueDetailModal
           issue={selectedIssue}
           actorLabel={actorLabel}
-          onClose={() => setSelectedIssue(null)}
+          onClose={() => setSelectedSnapshot(null)}
           onUpdated={refresh}
         />
       ) : null}
