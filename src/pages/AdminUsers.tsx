@@ -19,12 +19,16 @@ import type { Department, Profile, Role } from '../lib/types'
 
 const ROLE_LABELS: Record<Role, string> = {
   super_admin: 'Super Admin',
+  readonly_admin: 'Read-only Admin',
   dept_admin: 'Staff Admin',
   field_engineer: 'Field Engineer',
 }
 
 const ROLE_STYLES: Record<Role, string> = {
   super_admin: 'bg-violet-wash text-violet ring-violet/25',
+  // Deliberately the muted, unsaturated slot: this role acts on nothing, and
+  // the badge should read as quieter than the ones that do.
+  readonly_admin: 'bg-raised text-ink-soft ring-line-strong',
   dept_admin: 'bg-info-wash text-info ring-info/25',
   field_engineer: 'bg-brand-wash text-brand ring-brand/40',
 }
@@ -40,7 +44,7 @@ function RoleBadge({ role }: { role: Role }) {
 }
 
 export function AdminUsers() {
-  const { profile, isSuperAdmin, departmentId } = useAuth()
+  const { profile, hasGlobalScope, departmentId, isReadOnly } = useAuth()
 
   const [users, setUsers] = useState<Profile[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
@@ -48,7 +52,11 @@ export function AdminUsers() {
   const [error, setError] = useState<string | null>(null)
 
   // A super admin creates staff admins; a staff admin creates field engineers.
-  const creatableRole: Role = isSuperAdmin ? 'dept_admin' : 'field_engineer'
+  const creatableRole: Role = hasGlobalScope ? 'dept_admin' : 'field_engineer'
+
+  // A read-only admin is global, like a super admin, so it belongs to no
+  // department — profiles_department_required enforces that in Postgres.
+  const GLOBAL_ROLES: Role[] = ['super_admin', 'readonly_admin']
 
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -79,18 +87,19 @@ export function AdminUsers() {
 
   useEffect(() => {
     setNewRole(creatableRole)
-    if (!isSuperAdmin && departmentId) setNewDepartment(departmentId)
-  }, [creatableRole, isSuperAdmin, departmentId])
+    if (!hasGlobalScope && departmentId) setNewDepartment(departmentId)
+  }, [creatableRole, hasGlobalScope, departmentId])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
 
-    // Both staff roles need a department (profiles_department_required enforces
-    // it in Postgres). The department picker is no longer a native <select>, so
-    // it cannot carry `required` — this keeps the check client-side instead of
+    // Departmental roles need a department (profiles_department_required
+    // enforces it in Postgres). The picker is no longer a native <select>, so it
+    // cannot carry `required` — this keeps the check client-side instead of
     // making the user wait for the edge function to reject it.
-    if (!newDepartment) {
+    const isGlobalRole = GLOBAL_ROLES.includes(newRole)
+    if (!isGlobalRole && !newDepartment) {
       setError('Pick a department for this user.')
       return
     }
@@ -106,7 +115,7 @@ export function AdminUsers() {
         password,
         full_name: fullName.trim(),
         role: newRole,
-        department_id: newDepartment || null,
+        department_id: isGlobalRole ? null : newDepartment || null,
         phone: phone.trim() || null,
       },
     })
@@ -143,21 +152,30 @@ export function AdminUsers() {
     load()
   }
 
-  const visibleUsers = isSuperAdmin
+  const visibleUsers = hasGlobalScope
     ? users
     : users.filter((u) => u.department_id === departmentId && u.role === 'field_engineer')
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <h1 className="mb-1 text-2xl font-semibold text-ink text-balance">
-        {isSuperAdmin ? 'User Management' : 'My Team'}
+        {hasGlobalScope ? 'User Management' : 'My Team'}
       </h1>
       <p className="mb-8 text-ink-soft text-pretty">
-        {isSuperAdmin
+        {hasGlobalScope
           ? 'Create one staff admin per department. Each staff admin then adds their own field engineers.'
           : 'Add the field engineers who will be assigned tickets in your department.'}
       </p>
 
+      {isReadOnly ? (
+        <div className="mb-8">
+          <Alert tone="info">
+            You have read-only access. You can see everything here, but not change it.
+          </Alert>
+        </div>
+      ) : null}
+
+      {isReadOnly ? null : (
       <section className="mb-10 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-4 text-sm font-semibold text-ink">
           Add {ROLE_LABELS[creatableRole]}
@@ -226,7 +244,7 @@ export function AdminUsers() {
               )}
             </Field>
 
-            {isSuperAdmin ? (
+            {hasGlobalScope ? (
               <>
                 <div>
                   <label htmlFor="new-role" className="mb-1.5 block text-sm font-medium text-ink">
@@ -239,22 +257,32 @@ export function AdminUsers() {
                     options={[
                       { value: 'dept_admin', label: 'Staff Admin' },
                       { value: 'field_engineer', label: 'Field Engineer' },
+                      { value: 'readonly_admin', label: 'Read-only Admin' },
                     ]}
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="new-department" className="mb-1.5 block text-sm font-medium text-ink">
-                    Department
-                  </label>
-                  <FieldSelect
-                    id="new-department"
-                    value={newDepartment}
-                    onValueChange={setNewDepartment}
-                    placeholder="Select a department…"
-                    options={departments.map((d) => ({ value: d.id, label: d.name }))}
-                  />
-                </div>
+                {GLOBAL_ROLES.includes(newRole) ? (
+                  <div className="flex items-end">
+                    <p className="text-sm text-subtle text-pretty">
+                      Sees every department, so belongs to none. Can view the board, roster, team and
+                      analytics, and change nothing.
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <label htmlFor="new-department" className="mb-1.5 block text-sm font-medium text-ink">
+                      Department
+                    </label>
+                    <FieldSelect
+                      id="new-department"
+                      value={newDepartment}
+                      onValueChange={setNewDepartment}
+                      placeholder="Select a department…"
+                      options={departments.map((d) => ({ value: d.id, label: d.name }))}
+                    />
+                  </div>
+                )}
               </>
             ) : (
               <div className="sm:col-span-2">
@@ -274,10 +302,11 @@ export function AdminUsers() {
           </Button>
         </form>
       </section>
+      )}
 
       <section>
         <h2 className="mb-3 text-sm font-semibold text-ink">
-          {isSuperAdmin ? 'All Staff' : 'Field Engineers'}
+          {hasGlobalScope ? 'All Staff' : 'Field Engineers'}
         </h2>
 
         {loading ? (
@@ -326,7 +355,7 @@ export function AdminUsers() {
                     <TableCell className="px-4 py-3 text-right">
                       {user.id === profile?.id ? (
                         <span className="text-xs text-subtle">You</span>
-                      ) : (
+                      ) : isReadOnly ? null : (
                         <Button variant="secondary" size="sm" onClick={() => toggleActive(user)}>
                           {user.is_active ? 'Deactivate' : 'Reactivate'}
                         </Button>

@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const active = profile?.is_active !== false
     const isSuperAdmin = active && role === 'super_admin'
     const isDeptAdmin = active && role === 'dept_admin'
+    const isReadOnly = active && role === 'readonly_admin'
 
     return {
       session,
@@ -72,6 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading: sessionLoading || profileLoading,
       role,
       isSuperAdmin,
+      isReadOnly,
+      // Scope, deliberately separate from capability: a read-only admin sees
+      // every department but may change nothing, so the two questions the UI
+      // used to answer with `isSuperAdmin` alone have to be asked apart.
+      hasGlobalScope: isSuperAdmin || isReadOnly,
       canManageDepartment: isSuperAdmin || isDeptAdmin,
       canManageUsers: isSuperAdmin || isDeptAdmin,
       isFieldEngineer: active && role === 'field_engineer',

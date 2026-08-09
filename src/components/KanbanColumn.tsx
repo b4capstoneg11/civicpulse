@@ -8,10 +8,12 @@ function KanbanColumnImpl({
   status,
   issues,
   onSelect,
+  dragDisabled = false,
 }: {
   status: IssueStatus
   issues: Issue[]
   onSelect: (issue: Issue) => void
+  dragDisabled?: boolean
 }) {
   return (
     <section
@@ -38,7 +40,8 @@ function KanbanColumnImpl({
               <p className="px-2 py-6 text-center text-xs text-subtle">No tickets</p>
             ) : null}
             {issues.map((issue, index) => (
-              <IssueCard key={issue.id} issue={issue} index={index} onSelect={onSelect} />
+              <IssueCard
+                dragDisabled={dragDisabled} key={issue.id} issue={issue} index={index} onSelect={onSelect} />
             ))}
             {provided.placeholder}
           </div>

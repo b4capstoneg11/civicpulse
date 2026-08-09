@@ -22,7 +22,11 @@ const CORS_HEADERS = {
 
 const JSON_HEADERS = { ...CORS_HEADERS, 'Content-Type': 'application/json' }
 
-type Role = 'super_admin' | 'dept_admin' | 'field_engineer'
+type Role = 'super_admin' | 'readonly_admin' | 'dept_admin' | 'field_engineer'
+
+// Global roles hold no department; the profiles_department_required check
+// constraint enforces the same thing at the table.
+const GLOBAL_ROLES: Role[] = ['super_admin', 'readonly_admin']
 
 interface CreateUserBody {
   action: 'create'
@@ -74,6 +78,7 @@ async function describeExistingAccount(
 
     const roleLabels: Record<string, string> = {
       super_admin: 'Super Admin',
+      readonly_admin: 'Read-only Admin',
       dept_admin: 'Staff Admin',
       field_engineer: 'Field Engineer',
     }
@@ -159,7 +164,8 @@ Deno.serve(async (req) => {
       return json({ error: 'Password must be at least 8 characters' }, 400)
     }
 
-    // Who may create whom.
+    // Who may create whom. A readonly_admin falls to the final branch: it can
+    // read every page but create nobody, which is the point of the role.
     if (caller.role === 'super_admin') {
       if (role === 'super_admin') {
         return json({ error: 'Additional super admins must be provisioned directly in the database' }, 403)
@@ -175,7 +181,12 @@ Deno.serve(async (req) => {
       return json({ error: 'Not permitted to create users' }, 403)
     }
 
-    if (!department_id) {
+    const isGlobalRole = GLOBAL_ROLES.includes(role)
+
+    if (isGlobalRole && department_id) {
+      return json({ error: 'A read-only admin sees every department, so it cannot belong to one' }, 400)
+    }
+    if (!isGlobalRole && !department_id) {
       return json({ error: 'A department is required for this role' }, 400)
     }
 
@@ -228,7 +239,7 @@ Deno.serve(async (req) => {
       id: created.user.id,
       full_name,
       role,
-      department_id,
+      department_id: isGlobalRole ? null : department_id,
       phone: phone ?? null,
       created_by: caller.id,
     })

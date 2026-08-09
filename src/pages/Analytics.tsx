@@ -74,7 +74,7 @@ function ChartCard({
 }
 
 export function Analytics() {
-  const { profile, isSuperAdmin, departmentId } = useAuth()
+  const { profile, hasGlobalScope, departmentId } = useAuth()
 
   const [issues, setIssues] = useState<Issue[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
@@ -86,22 +86,22 @@ export function Analytics() {
   // Super admins may narrow to one department; a staff admin is pinned to theirs.
   const [deptFilter, setDeptFilter] = useState('')
 
-  const scopedDepartment = isSuperAdmin ? deptFilter : (departmentId ?? '')
+  const scopedDepartment = hasGlobalScope ? deptFilter : (departmentId ?? '')
 
   // A non-super-admin with no department must never fall through to an unscoped
   // query. The check constraint makes this impossible in the database, but an
   // empty filter would silently widen scope to every department, so it is
   // treated as a hard stop rather than trusted.
-  const scopeBroken = !isSuperAdmin && !departmentId
+  const scopeBroken = !hasGlobalScope && !departmentId
 
   useEffect(() => {
-    if (!isSuperAdmin) return
+    if (!hasGlobalScope) return
     supabase
       .from('departments')
       .select('*')
       .order('name')
       .then(({ data }) => setDepartments(data ?? []))
-  }, [isSuperAdmin])
+  }, [hasGlobalScope])
 
   useEffect(() => {
     if (scopeBroken) {
@@ -148,7 +148,7 @@ export function Analytics() {
 
   const result: AnalyticsResult = useMemo(() => buildAnalytics(issues), [issues])
 
-  const scopeLabel = isSuperAdmin
+  const scopeLabel = hasGlobalScope
     ? deptFilter
       ? `${departments.find((d) => d.id === deptFilter)?.name ?? 'Department'} · ${RANGES.find((r) => r.key === range)?.label}`
       : `All departments · ${RANGES.find((r) => r.key === range)?.label}`
@@ -216,7 +216,7 @@ export function Analytics() {
           />
         </div>
 
-        {isSuperAdmin ? (
+        {hasGlobalScope ? (
           <div>
             <label htmlFor="dept" className="mb-1 block text-xs font-medium text-ink-soft">
               Department

@@ -22,7 +22,7 @@ const EMPTY_BY_STATUS: Record<IssueStatus, Issue[]> = {
 }
 
 export function Board() {
-  const { session, profile, isSuperAdmin, departmentId } = useAuth()
+  const { session, profile, hasGlobalScope, departmentId, isReadOnly } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [issues, setIssues] = useState<Issue[]>([])
@@ -37,7 +37,7 @@ export function Board() {
   // Filters live in the URL so a filtered board can be bookmarked and shared.
   // A dept_admin is pinned to their own department — RLS would hide other
   // departments' tickets anyway, but pinning keeps the UI honest about it.
-  const filterDepartment = isSuperAdmin ? (searchParams.get('department') ?? '') : (departmentId ?? '')
+  const filterDepartment = hasGlobalScope ? (searchParams.get('department') ?? '') : (departmentId ?? '')
   const filterPriority = searchParams.get('priority') ?? ''
   const filterArea = searchParams.get('area') ?? ''
   const filterAssignee = searchParams.get('assignee') ?? ''
@@ -162,6 +162,11 @@ export function Board() {
   const refresh = useCallback(() => setRefreshToken((n) => n + 1), [])
 
   async function handleDragEnd(result: DropResult) {
+    // Cards are already undraggable for a read-only viewer; this is the second
+    // line, in case a drag is synthesised some other way. RLS is the third and
+    // the one that actually decides.
+    if (isReadOnly) return
+
     const { source, destination, draggableId } = result
     if (!destination || destination.droppableId === source.droppableId) return
 
@@ -200,7 +205,7 @@ export function Board() {
 
   // Auth loading and the signed-out state are handled by RequireRole on the route.
   const hasFilters = Boolean(
-    (isSuperAdmin && filterDepartment) || filterPriority || filterArea || filterAssignee
+    (hasGlobalScope && filterDepartment) || filterPriority || filterArea || filterAssignee
   )
 
   return (
@@ -209,11 +214,11 @@ export function Board() {
         <div className="mr-2">
           <h1 className="text-xl font-semibold text-ink">Issue Board</h1>
           <p className="text-xs text-subtle">
-            {isSuperAdmin ? 'All departments' : (profile?.departments?.name ?? 'Your department')}
+            {hasGlobalScope ? 'All departments' : (profile?.departments?.name ?? 'Your department')}
           </p>
         </div>
 
-        {isSuperAdmin ? (
+        {hasGlobalScope ? (
           <div>
             <label htmlFor="filter-department" className="mb-1 block text-xs font-medium text-ink-soft">
               Department
@@ -319,6 +324,7 @@ export function Board() {
                 status={status}
                 issues={issuesByStatus[status] ?? EMPTY_BY_STATUS[status]}
                 onSelect={handleSelect}
+                dragDisabled={isReadOnly}
               />
             ))}
           </div>

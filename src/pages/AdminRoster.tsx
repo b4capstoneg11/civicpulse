@@ -16,7 +16,7 @@ const DEFAULT_END = '18:00'
 const OPEN_STATUSES = ['created', 'assigned', 'in_progress']
 
 export function AdminRoster() {
-  const { isSuperAdmin, departmentId } = useAuth()
+  const { hasGlobalScope, departmentId, isReadOnly } = useAuth()
 
   const [departments, setDepartments] = useState<Department[]>([])
   // A super admin has no department of their own, so they pick one to edit.
@@ -34,13 +34,13 @@ export function AdminRoster() {
   const [adding, setAdding] = useState(false)
 
   useEffect(() => {
-    if (!isSuperAdmin) return
+    if (!hasGlobalScope) return
     supabase
       .from('departments')
       .select('*')
       .order('name')
       .then(({ data }) => setDepartments(data ?? []))
-  }, [isSuperAdmin])
+  }, [hasGlobalScope])
 
   const load = useCallback(async () => {
     if (!selectedDepartment) {
@@ -94,6 +94,10 @@ export function AdminRoster() {
   }, [load])
 
   async function toggleShift(engineer: EngineerWorkload, weekday: number) {
+    // The cells are disabled for a read-only viewer; this guards the handler
+    // too. RLS refuses the write regardless.
+    if (isReadOnly) return
+
     const cellKey = `${engineer.profile.id}-${weekday}`
     const existing = engineer.shifts.find((s) => s.weekday === weekday)
 
@@ -220,7 +224,15 @@ export function AdminRoster() {
         when the next shift opens.
       </p>
 
-      {isSuperAdmin ? (
+      {isReadOnly ? (
+        <div className="mb-6">
+          <Alert tone="info">
+            You have read-only access. You can see every roster here, but not change one.
+          </Alert>
+        </div>
+      ) : null}
+
+      {hasGlobalScope ? (
         <div className="mb-6 max-w-xs">
           <label htmlFor="roster-department" className="mb-1.5 block text-sm font-medium text-ink">
             Department
@@ -252,6 +264,7 @@ export function AdminRoster() {
         />
       ) : (
         <>
+          {isReadOnly ? null : (
           <section className="mb-8 rounded-xl border border-line bg-panel p-5">
             <h2 className="mb-1 text-sm font-semibold text-ink">Add a Shift</h2>
             <p className="mb-4 text-sm text-subtle text-pretty">
@@ -336,11 +349,14 @@ export function AdminRoster() {
               </Button>
             </form>
           </section>
+          )}
 
           <div className="overflow-x-auto rounded-xl border border-line bg-panel">
             <table className="w-full text-sm">
               <caption className="sr-only">
-                Weekly shift roster. Select a day to toggle whether that engineer works it.
+                {isReadOnly
+                  ? 'Weekly shift roster.'
+                  : 'Weekly shift roster. Select a day to toggle whether that engineer works it.'}
               </caption>
               <thead className="border-b border-line bg-raised text-xs uppercase tracking-wide text-subtle">
                 <tr>
@@ -387,12 +403,12 @@ export function AdminRoster() {
                             <TooltipTrigger
                               type="button"
                               onClick={() => toggleShift(engineer, weekday)}
-                              disabled={savingCell === cellKey}
+                              disabled={isReadOnly || savingCell === cellKey}
                               aria-pressed={Boolean(shift)}
                               aria-label={
                                 shift
-                                  ? `${engineer.profile.full_name}, ${day}, ${shift.start_time}–${shift.end_time}. Click to clear.`
-                                  : `${engineer.profile.full_name}, ${day}, not rostered. Click to add ${DEFAULT_START}–${DEFAULT_END}.`
+                                  ? `${engineer.profile.full_name}, ${day}, ${shift.start_time}–${shift.end_time}.${isReadOnly ? '' : ' Click to clear.'}`
+                                  : `${engineer.profile.full_name}, ${day}, not rostered.${isReadOnly ? '' : ` Click to add ${DEFAULT_START}–${DEFAULT_END}.`}`
                               }
                               className={`h-8 w-full min-w-14 rounded-md border text-xs font-medium transition-colors [touch-action:manipulation] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:opacity-50 ${
                                 shift

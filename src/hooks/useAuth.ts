@@ -12,6 +12,14 @@ export interface AuthValue {
   loading: boolean
   role: Role | null
   isSuperAdmin: boolean
+  /** Sees everything, changes nothing. */
+  isReadOnly: boolean
+  /**
+   * Sees every department rather than just their own. True for a super admin
+   * and for a read-only admin — which is why this is not `isSuperAdmin`: that
+   * one answers "may they act", and the two part company for this role.
+   */
+  hasGlobalScope: boolean
   /** A super admin has every department admin capability, everywhere. */
   canManageDepartment: boolean
   canManageUsers: boolean

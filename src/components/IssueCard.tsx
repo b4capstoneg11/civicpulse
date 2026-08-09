@@ -8,17 +8,20 @@ function IssueCardImpl({
   issue,
   index,
   onSelect,
+  dragDisabled = false,
 }: {
   issue: Issue
   index: number
   // Takes the issue rather than a pre-bound closure, so the prop stays
   // referentially stable across renders and `memo` can actually bail out.
   onSelect: (issue: Issue) => void
+  /** Read-only viewers still open a ticket; they just cannot move it. */
+  dragDisabled?: boolean
 }) {
   const onClick = () => onSelect(issue)
 
   return (
-    <Draggable draggableId={issue.id} index={index}>
+    <Draggable draggableId={issue.id} index={index} isDragDisabled={dragDisabled}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}

@@ -18,7 +18,12 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
 }
 
 export function Navbar() {
-  const { session, profile, role, canManageUsers, canManageDepartment, isFieldEngineer } = useAuth()
+  const { session, profile, role, canManageUsers, canManageDepartment, isFieldEngineer, isReadOnly } =
+    useAuth()
+
+  // A read-only admin reaches the same pages; the pages themselves are what
+  // withhold the controls.
+  const seesStaffPages = canManageDepartment || isReadOnly
   const navigate = useNavigate()
 
   async function handleLogout() {
@@ -68,22 +73,22 @@ export function Navbar() {
                   My Work
                 </NavLink>
               ) : null}
-              {canManageDepartment ? (
+              {seesStaffPages ? (
                 <NavLink to="/board" className={navLinkClass}>
                   Board
                 </NavLink>
               ) : null}
-              {canManageDepartment ? (
+              {seesStaffPages ? (
                 <NavLink to="/roster" className={navLinkClass}>
                   Roster
                 </NavLink>
               ) : null}
-              {canManageUsers ? (
+              {canManageUsers || isReadOnly ? (
                 <NavLink to="/users" className={navLinkClass}>
                   Team
                 </NavLink>
               ) : null}
-              {canManageDepartment ? (
+              {seesStaffPages ? (
                 <NavLink to="/analytics" className={navLinkClass}>
                   Analytics
                 </NavLink>

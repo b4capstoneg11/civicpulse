@@ -70,7 +70,7 @@ export interface IssueStatusHistoryEntry {
   created_at: string
 }
 
-export type Role = 'super_admin' | 'dept_admin' | 'field_engineer'
+export type Role = 'super_admin' | 'readonly_admin' | 'dept_admin' | 'field_engineer'
 
 export interface Profile {
   id: string

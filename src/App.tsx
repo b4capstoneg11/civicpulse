@@ -87,7 +87,7 @@ function App() {
                 <Route
                   path="/board"
                   element={
-                    <RequireRole allow={['super_admin', 'dept_admin']}>
+                    <RequireRole allow={['super_admin', 'readonly_admin', 'dept_admin']}>
                       <Board />
                     </RequireRole>
                   }
@@ -95,7 +95,7 @@ function App() {
                 <Route
                   path="/roster"
                   element={
-                    <RequireRole allow={['super_admin', 'dept_admin']}>
+                    <RequireRole allow={['super_admin', 'readonly_admin', 'dept_admin']}>
                       <AdminRoster />
                     </RequireRole>
                   }
@@ -103,7 +103,7 @@ function App() {
                 <Route
                   path="/users"
                   element={
-                    <RequireRole allow={['super_admin', 'dept_admin']}>
+                    <RequireRole allow={['super_admin', 'readonly_admin', 'dept_admin']}>
                       <AdminUsers />
                     </RequireRole>
                   }
@@ -111,7 +111,7 @@ function App() {
                 <Route
                   path="/analytics"
                   element={
-                    <RequireRole allow={['super_admin', 'dept_admin']}>
+                    <RequireRole allow={['super_admin', 'readonly_admin', 'dept_admin']}>
                       <Analytics />
                     </RequireRole>
                   }

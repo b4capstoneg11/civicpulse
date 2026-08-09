@@ -2,6 +2,7 @@ import type { IssueStatus, Priority, Role } from './types'
 
 export const ROLE_LABELS: Record<Role, string> = {
   super_admin: 'Super Admin',
+  readonly_admin: 'Read-only Admin',
   dept_admin: 'Staff Admin',
   field_engineer: 'Field Engineer',
 }
@@ -13,6 +14,7 @@ export const ROLE_LABELS: Record<Role, string> = {
  */
 export const ROLE_HOME: Record<Role, string> = {
   super_admin: '/board',
+  readonly_admin: '/board',
   dept_admin: '/board',
   field_engineer: '/my-work',
 }
