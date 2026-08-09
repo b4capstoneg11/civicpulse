@@ -379,10 +379,22 @@ export function ReportIssue() {
           >
             {locating ? 'Getting Location…' : location ? 'Location Captured ✓' : 'Capture My Location'}
           </Button>
-          {address ? (
-            <p className="mt-2 text-sm text-ink-soft">
-              {joinParts([address.area, address.city, address.state, address.pincode])}
-            </p>
+          {/* Keyed off `location`, not `address`: reverse geocoding is a best-effort
+              call to a free service, and when it comes back empty the resident used
+              to get a captured location with nothing to show for it. The
+              coordinates are the part we always have. */}
+          {location ? (
+            <div className="mt-2 space-y-0.5">
+              {address ? (
+                <p className="text-sm text-ink-soft">
+                  {joinParts([address.area, address.city, address.state, address.pincode])}
+                </p>
+              ) : null}
+              <p className="font-mono text-xs tabular-nums text-subtle">
+                <span className="sr-only">Coordinates: </span>
+                {location.lat.toFixed(6)}, {location.lon.toFixed(6)}
+              </p>
+            </div>
           ) : null}
           {fieldErrors.location ? (
             <p id="location-error" className="mt-1.5 text-sm text-danger">
