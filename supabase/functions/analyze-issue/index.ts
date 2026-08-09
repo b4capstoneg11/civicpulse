@@ -278,13 +278,13 @@ Deno.serve(async (req) => {
         if (hammingDistance(imageSignature, candidate.image_signature) > HAMMING_DUPLICATE_THRESHOLD) {
           continue
         }
+        // No distance: this match did not use one, and the two reports can be
+        // kilometres apart, which would read as nonsense next to "same location".
         match = {
           ticket: candidate.ticket_number,
           status: candidate.status,
           reportedAt: candidate.created_at,
-          meters: hasCoords
-            ? Math.round(metersBetween(latitude!, longitude!, candidate.latitude, candidate.longitude))
-            : null,
+          meters: null,
           on: 'photo',
         }
         break
