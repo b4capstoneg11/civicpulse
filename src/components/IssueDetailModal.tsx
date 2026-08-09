@@ -10,7 +10,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../hooks/useAuth'
 import { StatusBadge, PriorityBadge, TicketNumber } from './StatusBadge'
 import { toast } from 'sonner'
-import { Alert, Button, Field, Textarea } from './ui'
+import { Alert, Button, Coordinates, Field, Textarea } from './ui'
 import { FieldSelect } from './FieldSelect'
 import { formatDateTime, joinParts } from '../lib/format'
 import { STATUS_LABELS } from '../lib/labels'
@@ -336,9 +336,14 @@ export function IssueDetailModal({
         {issue.ai_summary ? (
           <p className="mb-2 text-xs italic text-subtle break-words">AI summary: {issue.ai_summary}</p>
         ) : null}
-        <p className="mb-5 text-xs text-subtle break-words">
-          {joinParts([issue.departments?.name, issue.landmark, issue.area, issue.city])}
-        </p>
+        <div className="mb-5 space-y-0.5">
+          <p className="text-xs text-subtle break-words">
+            {joinParts([issue.departments?.name, issue.landmark, issue.area, issue.city])}
+          </p>
+          {/* Crews navigate to the spot, and a landmark like "opposite the market"
+              only narrows it so far. The exact position is on the row already. */}
+          <Coordinates lat={issue.latitude} lon={issue.longitude} />
+        </div>
 
         <section className="mb-5">
           <h3 className="mb-2 text-sm font-semibold text-ink">Audit Trail</h3>

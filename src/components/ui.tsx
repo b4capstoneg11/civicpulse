@@ -180,6 +180,24 @@ export function EmptyState({ title, description }: { title: string; description?
   )
 }
 
+/**
+ * A captured position. Six decimals is finer than a phone's GPS resolves, so
+ * nothing meaningful is rounded away; monospaced and tabular so the digits line
+ * up between one ticket and the next. `toFixed` keeps the decimal point a dot
+ * in every locale — these are coordinates to paste into a map, not prose.
+ *
+ * The sr-only label is load-bearing: a bare pair of decimals is announced as
+ * noise otherwise.
+ */
+export function Coordinates({ lat, lon }: { lat: number; lon: number }) {
+  return (
+    <p className="font-mono text-xs tabular-nums text-subtle">
+      <span className="sr-only">Coordinates: </span>
+      {lat.toFixed(6)}, {lon.toFixed(6)}
+    </p>
+  )
+}
+
 /** Page heading block, so every screen leads the same way. */
 export function PageHeader({
   title,

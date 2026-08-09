@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { computeImageHash } from '../lib/imageHash'
 import { reverseGeocode } from '../lib/geocode'
 import { formatDate, formatRelative, joinParts } from '../lib/format'
-import { Alert, Button, Field, Input, Textarea } from '../components/ui'
+import { Alert, Button, Coordinates, Field, Input, Textarea } from '../components/ui'
 import { StatusBadge, TicketNumber } from '../components/StatusBadge'
 import type { ClassificationResult, DuplicateMatch, ReporterChannel } from '../lib/types'
 
@@ -390,10 +390,7 @@ export function ReportIssue() {
                   {joinParts([address.area, address.city, address.state, address.pincode])}
                 </p>
               ) : null}
-              <p className="font-mono text-xs tabular-nums text-subtle">
-                <span className="sr-only">Coordinates: </span>
-                {location.lat.toFixed(6)}, {location.lon.toFixed(6)}
-              </p>
+              <Coordinates lat={location.lat} lon={location.lon} />
             </div>
           ) : null}
           {fieldErrors.location ? (
