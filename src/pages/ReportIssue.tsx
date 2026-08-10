@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { computeImageHash } from '../lib/imageHash'
 import { downscaleForAnalysis } from '../lib/downscale'
+import { telegramDeepLink } from '../lib/telegram'
 import { reverseGeocode } from '../lib/geocode'
 import { formatDate, formatRelative, joinParts } from '../lib/format'
 import { Alert, Button, Coordinates, Field, Input, Textarea } from '../components/ui'
@@ -53,6 +54,7 @@ export function ReportIssue() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [resultTicket, setResultTicket] = useState<string | null>(null)
   const [duplicateOf, setDuplicateOf] = useState<DuplicateMatch | null>(null)
+  const [telegramUrl, setTelegramUrl] = useState<string | null>(null)
 
   // Object URLs leak unless revoked, so the preview is tied to the file's lifetime
   // rather than recreated on every render.
@@ -65,6 +67,25 @@ export function ReportIssue() {
     setPhotoPreview(url)
     return () => URL.revokeObjectURL(url)
   }, [photo])
+
+  // Fetched as soon as the confirmation screen appears rather than on click:
+  // the link has to be a real anchor with an href, because a button that awaits
+  // a round trip and then navigates gets eaten by mobile popup blockers.
+  // Best-effort — if it fails the button simply doesn't appear.
+  useEffect(() => {
+    if (!resultTicket) return
+
+    let cancelled = false
+    supabase
+      .rpc('create_telegram_link_token', { p_ticket_number: resultTicket })
+      .then(({ data }) => {
+        if (!cancelled && typeof data === 'string') setTelegramUrl(telegramDeepLink(data))
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [resultTicket])
 
   function captureLocation() {
     setLocating(true)
@@ -275,12 +296,32 @@ export function ReportIssue() {
             </div>
           ) : null}
         </div>
-        <Link
-          to={`/track?ticket=${resultTicket}`}
-          className="inline-flex rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
-        >
-          Track This Ticket
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Link
+            to={`/track?ticket=${resultTicket}`}
+            className="inline-flex rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+          >
+            Track This Ticket
+          </Link>
+          {/* Offered to every reporter, including anonymous ones: unlike email,
+              following on Telegram tells us nothing about who they are. */}
+          {telegramUrl ? (
+            <a
+              href={telegramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-line bg-panel px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:border-line-strong hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+            >
+              Get Updates on Telegram
+              <span className="sr-only"> (opens Telegram in a new tab)</span>
+            </a>
+          ) : null}
+        </div>
+        {telegramUrl ? (
+          <p className="mt-3 text-xs text-subtle text-pretty">
+            Tap Start in Telegram and we&rsquo;ll message you there whenever this ticket changes.
+          </p>
+        ) : null}
       </div>
     )
   }
