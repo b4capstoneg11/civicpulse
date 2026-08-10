@@ -173,6 +173,18 @@ export function ReportIssue() {
           })
         }
 
+        // A merged report creates no ticket of its own, so this resident's
+        // address has nowhere to live unless they are attached to the ticket
+        // they were merged into — otherwise they gave us an email and would
+        // never hear another word. Best-effort: they already have the ticket
+        // number on screen, so a failure here must not fail the submission.
+        if (reporterChannel === 'email') {
+          await supabase.rpc('subscribe_to_ticket', {
+            p_ticket_number: classification.duplicateOfTicket,
+            p_contact: reporterContact,
+          })
+        }
+
         setResultTicket(classification.duplicateOfTicket)
         setDuplicateOf(classification.duplicateOf ?? null)
         setStep('duplicate')
@@ -227,12 +239,10 @@ export function ReportIssue() {
         },
       ])
 
-      await supabase.from('notifications').insert({
-        issue_id: issue.id,
-        channel: 'email',
-        recipient: reporterChannel === 'anonymous' ? null : reporterContact,
-        message: `Your report ${issue.ticket_number} has been created and assigned.`,
-      })
+      // No notification row is written here any more. A trigger on `issues`
+      // enrols an email reporter as a subscriber and queues the notification
+      // (migration 0007), which is what finally covers the status-change paths
+      // this component never knew about.
 
       setResultTicket(issue.ticket_number)
       setStep('done')

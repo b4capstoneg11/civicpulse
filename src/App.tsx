@@ -13,6 +13,7 @@ import { ReportIssue } from './pages/ReportIssue'
 // drag-and-drop library, which no resident ever loads.
 const TrackIssue = lazy(() => import('./pages/TrackIssue').then((m) => ({ default: m.TrackIssue })))
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
+const Unsubscribe = lazy(() => import('./pages/Unsubscribe').then((m) => ({ default: m.Unsubscribe })))
 const Board = lazy(() => import('./pages/Board').then((m) => ({ default: m.Board })))
 const MyWork = lazy(() => import('./pages/MyWork').then((m) => ({ default: m.MyWork })))
 const AdminUsers = lazy(() => import('./pages/AdminUsers').then((m) => ({ default: m.AdminUsers })))
@@ -83,6 +84,7 @@ function App() {
                 <Route path="/" element={<ReportIssue />} />
                 <Route path="/track" element={<TrackIssue />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/unsubscribe" element={<Unsubscribe />} />
 
                 <Route
                   path="/board"

@@ -5,14 +5,27 @@ import { StatusBadge, PriorityBadge, TicketNumber } from '../components/StatusBa
 import { RatingWidget } from '../components/RatingWidget'
 import { Alert, Button, Field, Input, Spinner } from '../components/ui'
 import { formatDateTime, joinParts } from '../lib/format'
-import type { Issue, IssueStatusHistoryEntry } from '../lib/types'
+import type { IssueStatusHistoryEntry, PublicIssue } from '../lib/types'
+
+/**
+ * Spelled out rather than `*` because `anon` holds a column-level grant on
+ * `issues` (migration 0007): reporter_contact, reporter_channel and
+ * image_signature are not readable here, and `select('*')` would ask for them
+ * and be refused. Must match the grant.
+ *
+ * One unbroken literal because supabase-js parses the select string in the type
+ * system: joining an array, or concatenating, widens it to `string` and the
+ * parser gives up.
+ */
+// prettier-ignore
+const PUBLIC_ISSUE_SELECT = 'id, ticket_number, photo_url, comment, landmark, latitude, longitude, pincode, area, city, state, issue_type, department_id, priority, ai_summary, ai_confidence, status, assigned_to, duplicate_of, reopen_count, resolution_photo_url, resolution_comment, resolved_at, closed_at, rating, rating_comment, created_at, updated_at, departments(id, slug, name)'
 
 export function TrackIssue() {
   const [searchParams, setSearchParams] = useSearchParams()
   const urlTicket = searchParams.get('ticket') ?? ''
 
   const [ticketInput, setTicketInput] = useState(urlTicket)
-  const [issue, setIssue] = useState<Issue | null>(null)
+  const [issue, setIssue] = useState<PublicIssue | null>(null)
   const [history, setHistory] = useState<IssueStatusHistoryEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -34,7 +47,7 @@ export function TrackIssue() {
 
     const { data: issueData, error: issueError } = await supabase
       .from('issues')
-      .select('*, departments(id, slug, name)')
+      .select(PUBLIC_ISSUE_SELECT)
       .eq('ticket_number', normalized)
       .single()
 
@@ -44,7 +57,11 @@ export function TrackIssue() {
       return
     }
 
-    setIssue(issueData as Issue)
+    // Through `unknown`: with the columns named explicitly, supabase-js types
+    // the `departments` embed as an array. The relation is many-to-one and
+    // PostgREST returns a single object — it just can't infer that without
+    // generated database types.
+    setIssue(issueData as unknown as PublicIssue)
 
     const { data: historyData } = await supabase
       .from('issue_status_history')
@@ -148,7 +165,7 @@ export function TrackIssue() {
                 {history.map((entry) => (
                   <li key={entry.id}>
                     <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={entry.status as Issue['status']} />
+                      <StatusBadge status={entry.status as PublicIssue['status']} />
                       <time dateTime={entry.created_at} className="text-xs tabular-nums text-subtle">
                         {formatDateTime(entry.created_at)}
                       </time>

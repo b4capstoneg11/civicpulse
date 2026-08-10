@@ -281,12 +281,9 @@ export function IssueDetailModal({
       actor: `staff:${actorLabel}`,
     })
 
-    await supabase.from('notifications').insert({
-      issue_id: issue.id,
-      channel: 'email',
-      recipient: issue.reporter_contact,
-      message: `Your report ${issue.ticket_number} has been resolved. Please confirm.`,
-    })
+    // The resolution notification is queued by the status-change trigger in
+    // migration 0007, for every subscriber rather than just the original
+    // reporter — and, unlike this insert, for every other status change too.
 
     setSubmitting(false)
     onUpdated()

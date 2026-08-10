@@ -61,6 +61,16 @@ export interface Issue {
   assignee?: { id: string; full_name: string } | null
 }
 
+/**
+ * An issue as an anonymous resident may read it.
+ *
+ * `anon` holds a column-level SELECT grant on `issues` (migration 0007) that
+ * withholds the reporter's contact details and the dedup hash, so a public
+ * query asking for those columns is rejected outright rather than returning
+ * null. Keep this in step with the grant.
+ */
+export type PublicIssue = Omit<Issue, 'reporter_channel' | 'reporter_contact' | 'image_signature'>
+
 export interface IssueStatusHistoryEntry {
   id: string
   issue_id: string
