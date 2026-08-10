@@ -185,12 +185,45 @@ function render(row: NotificationRow, siteUrl: string): Email {
   return { to: row.recipient, subject, html, text }
 }
 
+/**
+ * The `role` claim of the bearer token, or null if there isn't one.
+ *
+ * Reads the payload without verifying the signature, which is safe *here* and
+ * only here: this function is deployed with JWT verification on, so Supabase's
+ * gateway has already rejected anything not signed by the project. What the
+ * gateway does not do is care *which* role signed it -- an anon key is equally
+ * valid to it -- so that is what this adds.
+ */
+function callerRole(req: Request): string | null {
+  const auth = req.headers.get('Authorization') ?? ''
+  if (!auth.startsWith('Bearer ')) return null
+
+  const segment = auth.slice(7).split('.')[1]
+  if (!segment) return null
+
+  try {
+    const padded = segment.replaceAll('-', '+').replaceAll('_', '/')
+    const json = atob(padded.padEnd(Math.ceil(padded.length / 4) * 4, '='))
+    return JSON.parse(json).role ?? null
+  } catch {
+    return null
+  }
+}
+
 Deno.serve(async (req) => {
-  // Only the scheduler may drain the queue. Supabase's gateway checks that the
-  // JWT is *valid*, which an anon key also is -- so the service-role key is
-  // compared explicitly here rather than trusting the gateway alone.
+  // Only the scheduler may drain the queue.
+  //
+  // Checked by role rather than by comparing against SUPABASE_SERVICE_ROLE_KEY:
+  // a project can have more than one valid service_role JWT (a legacy key and a
+  // re-issued one), and byte-equality against whichever happens to be injected
+  // here rejects the others. Verified in production -- the cron job presented a
+  // perfectly good service_role key for this project and got a 403.
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  if (req.headers.get('Authorization') !== `Bearer ${serviceKey}`) {
+  const authorized =
+    req.headers.get('Authorization') === `Bearer ${serviceKey}` ||
+    callerRole(req) === 'service_role'
+
+  if (!authorized) {
     return new Response(JSON.stringify({ error: 'forbidden' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' },
