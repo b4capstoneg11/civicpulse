@@ -27,11 +27,23 @@ function duplicateMessage(match: DuplicateMatch | null): string {
 
 type Step = 'form' | 'submitting' | 'done' | 'duplicate'
 
+/**
+ * `phone` is absent on purpose. It is still a valid stored value — three older
+ * tickets carry a number — but it is no longer offered, because nothing was
+ * ever delivered to it and nothing realistically can be: SMS to Indian numbers
+ * requires TRAI DLT registration. Telegram took its place.
+ */
+const OFFERED_CHANNELS: ReporterChannel[] = ['anonymous', 'telegram', 'email']
+
 const CHANNEL_LABELS: Record<ReporterChannel, string> = {
   anonymous: 'Stay Anonymous',
-  phone: 'Phone',
+  telegram: 'Telegram',
   email: 'Email',
+  phone: 'Phone',
 }
+
+/** Only email is typed in. Telegram is linked afterwards, in Telegram. */
+const CHANNEL_NEEDS_CONTACT: ReporterChannel[] = ['email']
 
 export function ReportIssue() {
   const [photo, setPhoto] = useState<File | null>(null)
@@ -116,7 +128,9 @@ export function ReportIssue() {
     if (!photo) errors.photo = 'Attach a photo so staff can see the issue.'
     if (!comment.trim()) errors.comment = 'Describe what you’re reporting.'
     if (!location) errors.location = 'Capture your location so we can route this to the right area.'
-    if (reporterChannel !== 'anonymous' && !reporterContact.trim()) {
+    // Telegram is deliberately exempt: there is nothing for the resident to
+    // type, because the link is made afterwards from inside Telegram itself.
+    if (CHANNEL_NEEDS_CONTACT.includes(reporterChannel) && !reporterContact.trim()) {
       errors.contact = `Enter your ${reporterChannel}, or choose to stay anonymous.`
     }
     return errors
@@ -218,7 +232,7 @@ export function ReportIssue() {
         .from('issues')
         .insert({
           reporter_channel: reporterChannel,
-          reporter_contact: reporterChannel === 'anonymous' ? null : reporterContact,
+          reporter_contact: CHANNEL_NEEDS_CONTACT.includes(reporterChannel) ? reporterContact : null,
           photo_url: photoUrlData.publicUrl,
           comment,
           landmark: landmark || null,
@@ -266,6 +280,7 @@ export function ReportIssue() {
 
   if (step === 'done' || step === 'duplicate') {
     const isDuplicate = step === 'duplicate'
+    const wantsTelegram = reporterChannel === 'telegram'
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <div
@@ -296,26 +311,36 @@ export function ReportIssue() {
             </div>
           ) : null}
         </div>
+        {/* Telegram leads when the resident asked for it; otherwise tracking
+            leads and Telegram is the quieter second option. It stays on offer to
+            anonymous reporters either way — unlike email, following on Telegram
+            tells us nothing about who they are. */}
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Link
-            to={`/track?ticket=${resultTicket}`}
-            className="inline-flex rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
-          >
-            Track This Ticket
-          </Link>
-          {/* Offered to every reporter, including anonymous ones: unlike email,
-              following on Telegram tells us nothing about who they are. */}
           {telegramUrl ? (
             <a
               href={telegramUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border border-line bg-panel px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:border-line-strong hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+              className={
+                wantsTelegram
+                  ? 'inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2'
+                  : 'inline-flex items-center gap-2 rounded-lg border border-line bg-panel px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:border-line-strong hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2'
+              }
             >
-              Get Updates on Telegram
+              Get Telegram Updates
               <span className="sr-only"> (opens Telegram in a new tab)</span>
             </a>
           ) : null}
+          <Link
+            to={`/track?ticket=${resultTicket}`}
+            className={
+              wantsTelegram
+                ? 'inline-flex rounded-lg border border-line bg-panel px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:border-line-strong hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2'
+                : 'inline-flex rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2'
+            }
+          >
+            Track This Ticket
+          </Link>
         </div>
         {telegramUrl ? (
           <p className="mt-3 text-xs text-subtle text-pretty">
@@ -441,7 +466,7 @@ export function ReportIssue() {
         <fieldset>
           <legend className="mb-2 text-sm font-medium text-ink">How Should We Reach You?</legend>
           <div className="mb-3 flex flex-wrap gap-2">
-            {(['anonymous', 'phone', 'email'] as ReporterChannel[]).map((channel) => (
+            {OFFERED_CHANNELS.map((channel) => (
               <label
                 key={channel}
                 className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors [touch-action:manipulation] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand has-[:focus-visible]:ring-offset-2 ${
@@ -466,30 +491,36 @@ export function ReportIssue() {
             ))}
           </div>
 
-          {reporterChannel === 'anonymous' ? null : (
-            <Field
-              label={reporterChannel === 'email' ? 'Email Address' : 'Phone Number'}
-              error={fieldErrors.contact}
-              required
-            >
+          {reporterChannel === 'email' ? (
+            <Field label="Email Address" error={fieldErrors.contact} required>
               {(props) => (
                 <Input
                   {...props}
-                  type={reporterChannel === 'email' ? 'email' : 'tel'}
-                  name={reporterChannel === 'email' ? 'email' : 'tel'}
-                  autoComplete={reporterChannel === 'email' ? 'email' : 'tel'}
-                  inputMode={reporterChannel === 'email' ? 'email' : 'tel'}
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  inputMode="email"
                   spellCheck={false}
                   value={reporterContact}
                   onChange={(e) => {
                     setReporterContact(e.target.value)
                     setFieldErrors((prev) => ({ ...prev, contact: '' }))
                   }}
-                  placeholder={reporterChannel === 'email' ? 'you@example.com' : '+91 98765 43210'}
+                  placeholder="you@example.com"
                 />
               )}
             </Field>
-          )}
+          ) : null}
+
+          {/* Nothing to type: a bot can only message a chat it has been started
+              from, so the link is made on the next screen rather than here. */}
+          {reporterChannel === 'telegram' ? (
+            <p className="rounded-lg border border-line bg-raised px-3 py-2.5 text-sm text-ink-soft text-pretty">
+              After you submit, tap <span className="font-medium text-ink">Get Telegram Updates</span> to
+              open our bot and press Start. We&rsquo;ll message you there on every update — no phone
+              number or email needed.
+            </p>
+          ) : null}
         </fieldset>
 
         {error ? <Alert tone="error">{error}</Alert> : null}

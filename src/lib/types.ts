@@ -16,7 +16,13 @@ export type IssueStatus =
   | 'closed'
   | 'reopened'
 
-export type ReporterChannel = 'phone' | 'email' | 'anonymous'
+/**
+ * `phone` is legacy — retained because three tickets still carry a number, but
+ * no longer offered on the form. It was never delivered to: SMS to Indian
+ * numbers needs TRAI DLT registration, which this project cannot obtain.
+ * Telegram replaced it.
+ */
+export type ReporterChannel = 'phone' | 'email' | 'anonymous' | 'telegram'
 
 export interface Department {
   id: string
