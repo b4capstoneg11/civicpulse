@@ -80,12 +80,16 @@ export function ReportIssue() {
     return () => URL.revokeObjectURL(url)
   }, [photo])
 
-  // Fetched as soon as the confirmation screen appears rather than on click:
-  // the link has to be a real anchor with an href, because a button that awaits
-  // a round trip and then navigates gets eaten by mobile popup blockers.
-  // Best-effort — if it fails the button simply doesn't appear.
+  // Only for a resident who actually chose Telegram. "Stay Anonymous" means no
+  // follow-up channel at all, so offering one there contradicts the choice they
+  // just made — and no token is minted for a link that will not be shown.
+  //
+  // Fetched as the confirmation screen appears rather than on click: the link
+  // has to be a real anchor with an href, because a button that awaits a round
+  // trip and then navigates gets eaten by mobile popup blockers. Best-effort —
+  // if it fails the button simply doesn't appear.
   useEffect(() => {
-    if (!resultTicket) return
+    if (!resultTicket || reporterChannel !== 'telegram') return
 
     let cancelled = false
     supabase
@@ -97,7 +101,7 @@ export function ReportIssue() {
     return () => {
       cancelled = true
     }
-  }, [resultTicket])
+  }, [resultTicket, reporterChannel])
 
   function captureLocation() {
     setLocating(true)
@@ -280,7 +284,6 @@ export function ReportIssue() {
 
   if (step === 'done' || step === 'duplicate') {
     const isDuplicate = step === 'duplicate'
-    const wantsTelegram = reporterChannel === 'telegram'
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <div
@@ -311,21 +314,16 @@ export function ReportIssue() {
             </div>
           ) : null}
         </div>
-        {/* Telegram leads when the resident asked for it; otherwise tracking
-            leads and Telegram is the quieter second option. It stays on offer to
-            anonymous reporters either way — unlike email, following on Telegram
-            tells us nothing about who they are. */}
+        {/* The link exists only for a resident who chose Telegram, so its mere
+            presence decides which action leads. An anonymous reporter is never
+            offered a follow-up channel — that is what they asked for. */}
         <div className="flex flex-wrap items-center justify-center gap-3">
           {telegramUrl ? (
             <a
               href={telegramUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={
-                wantsTelegram
-                  ? 'inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2'
-                  : 'inline-flex items-center gap-2 rounded-lg border border-line bg-panel px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:border-line-strong hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2'
-              }
+              className="inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
             >
               Get Telegram Updates
               <span className="sr-only"> (opens Telegram in a new tab)</span>
@@ -334,7 +332,7 @@ export function ReportIssue() {
           <Link
             to={`/track?ticket=${resultTicket}`}
             className={
-              wantsTelegram
+              telegramUrl
                 ? 'inline-flex rounded-lg border border-line bg-panel px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:border-line-strong hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2'
                 : 'inline-flex rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2'
             }
