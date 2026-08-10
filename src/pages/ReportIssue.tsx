@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { computeImageHash } from '../lib/imageHash'
+import { downscaleForAnalysis } from '../lib/downscale'
 import { reverseGeocode } from '../lib/geocode'
 import { formatDate, formatRelative, joinParts } from '../lib/format'
 import { Alert, Button, Coordinates, Field, Input, Textarea } from '../components/ui'
@@ -21,18 +22,6 @@ function duplicateMessage(match: DuplicateMatch | null): string {
     `A ticket for this issue at this location was already raised on ${formatDate(match.reportedAt)} ` +
     'and is still open. Your report is linked to it — use the ticket number below to track progress.'
   )
-}
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result as string
-      resolve(result.split(',')[1])
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
 }
 
 type Step = 'form' | 'submitting' | 'done' | 'duplicate'
@@ -129,17 +118,19 @@ export function ReportIssue() {
     setStep('submitting')
 
     try {
-      // Hashing and base64 encoding are independent — run them together.
-      const [base64, imageSignature] = await Promise.all([
-        fileToBase64(photo!),
+      // Hashing and downscaling are independent — run them together.
+      // The shrunk copy goes to the classifier; the original still goes to
+      // Storage further down, so staff lose no detail.
+      const [analysisImage, imageSignature] = await Promise.all([
+        downscaleForAnalysis(photo!),
         computeImageHash(photo!),
       ])
 
       const { data: classification, error: fnError } =
         await supabase.functions.invoke<ClassificationResult>('analyze-issue', {
           body: {
-            photoBase64: base64,
-            mediaType: photo!.type || 'image/jpeg',
+            photoBase64: analysisImage.base64,
+            mediaType: analysisImage.mediaType,
             comment,
             landmark: landmark || undefined,
             area: address?.area ?? undefined,
