@@ -31,7 +31,6 @@ const GLOBAL_ROLES: Role[] = ['super_admin', 'readonly_admin']
 interface CreateUserBody {
   action: 'create'
   email: string
-  password: string
   full_name: string
   role: Role
   department_id?: string | null
@@ -58,10 +57,10 @@ function json(body: unknown, status = 200) {
  *
  * Loose on purpose. Strict RFC 5322 patterns reject more real addresses than
  * fake ones — plus-addressing, apostrophes and long TLDs all trip them — and a
- * false rejection blocks a legitimate colleague while a false acceptance costs
- * nothing here. This is a filter, not proof: the only proof an address belongs
- * to someone is sending something they must act on, which this flow does not do
- * yet, because the admin sets the password and nothing is ever delivered.
+ * false rejection blocks a legitimate colleague while a false acceptance is
+ * caught downstream: the invite has to be received and acted on before the
+ * account works at all, so a wrong-but-well-formed address fails visibly rather
+ * than producing an account nobody can reach.
  *
  * What it does catch is input that cannot work at all — no @, whitespace, no
  * dotted domain, or lengths beyond what SMTP accepts.
@@ -195,10 +194,13 @@ Deno.serve(async (req) => {
     // -------------------------------------------------------------------- create
     if (body.action !== 'create') return json({ error: 'Unknown action' }, 400)
 
-    const { password, full_name, role, department_id, phone } = body
+    const { full_name, role, department_id, phone } = body
 
-    if (!body.email || !password || !full_name || !role) {
-      return json({ error: 'email, password, full_name and role are all required' }, 400)
+    // No password: the invited person sets their own. Any password still sent
+    // by an older client is ignored rather than rejected, so a stale tab cannot
+    // fail a creation for a field that no longer means anything.
+    if (!body.email || !full_name || !role) {
+      return json({ error: 'email, full_name and role are all required' }, 400)
     }
 
     // Normalised here rather than trusted from the client. Supabase lower-cases
@@ -208,10 +210,6 @@ Deno.serve(async (req) => {
 
     if (!isPlausibleEmail(email)) {
       return json({ error: `"${body.email}" is not a valid email address.` }, 400)
-    }
-
-    if (password.length < 8) {
-      return json({ error: 'Password must be at least 8 characters' }, 400)
     }
 
     // Who may create whom. A readonly_admin falls to the final branch: it can
@@ -262,16 +260,30 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { data: created, error: createError } = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
+    // Invited rather than created with a password.
+    //
+    // The admin never chooses or learns the password: the account has none
+    // until the person follows the link and sets one. That also makes a
+    // mistyped address fail loudly — nobody can activate it — where before it
+    // produced a working account that its supposed owner could never reach,
+    // with the address recorded as confirmed because email_confirm said so
+    // while nothing had confirmed anything.
+    //
+    // redirectTo matters: without it the link is built from site_url and lands
+    // on the resident report form. Links the app generates say where to go.
+    const siteUrl = (Deno.env.get('PUBLIC_SITE_URL') ?? 'https://civicpulse-tan.vercel.app')
+      .replace(/\/+$/, '')
+
+    const { data: created, error: createError } = await admin.auth.admin.inviteUserByEmail(email, {
+      redirectTo: `${siteUrl}/set-password`,
     })
 
     if (createError || !created.user) {
       // "already registered" is the most common failure and the least helpful
       // message on its own — say which account holds the address.
-      if (/already been registered|already exists/i.test(createError?.message ?? '')) {
+      // inviteUserByEmail words this differently from createUser, so match
+      // loosely rather than on one provider phrasing.
+      if (/already|exists|registered/i.test(createError?.message ?? '')) {
         const owner = await describeExistingAccount(admin, email)
         return json(
           {

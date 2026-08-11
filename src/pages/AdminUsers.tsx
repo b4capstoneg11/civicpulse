@@ -64,7 +64,6 @@ export function AdminUsers() {
   // Held back until the field is left, so a suggestion cannot appear against a
   // half-typed domain — "ravi@gm" is not a mistake yet.
   const [emailBlurred, setEmailBlurred] = useState(false)
-  const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
   const [newRole, setNewRole] = useState<Role>(creatableRole)
   const [newDepartment, setNewDepartment] = useState(departmentId ?? '')
@@ -121,7 +120,6 @@ export function AdminUsers() {
       body: {
         action: 'create',
         email: email.trim(),
-        password,
         full_name: fullName.trim(),
         role: newRole,
         department_id: isGlobalRole ? null : newDepartment || null,
@@ -137,11 +135,10 @@ export function AdminUsers() {
       return
     }
 
-    toast.success(`${fullName.trim()} can now sign in with ${email.trim()}.`)
+    toast.success(`Invite sent to ${email.trim()}. They'll set their own password from the link.`)
     setFullName('')
     setEmail('')
     setEmailBlurred(false)
-    setPassword('')
     setPhone('')
     load()
   }
@@ -244,22 +241,6 @@ export function AdminUsers() {
                     </p>
                   ) : null}
                 </>
-              )}
-            </Field>
-
-            <Field label="Temporary Password" required hint="At least 8 characters. Share it securely.">
-              {(props) => (
-                <Input
-                  {...props}
-                  type="text"
-                  name="newPassword"
-                  autoComplete="off"
-                  spellCheck={false}
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
               )}
             </Field>
 
