@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
+import { arrivedFromRecoveryLink, recoveryLinkError } from '../lib/recoveryLink'
 import { AuthContext, type AuthValue } from '../hooks/useAuth'
 import type { Profile } from '../lib/types'
 
@@ -14,23 +16,44 @@ const PROFILE_COLUMNS =
  * the profile.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate()
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
   const [profileLoading, setProfileLoading] = useState(false)
 
   useEffect(() => {
+    // Two triggers for the same thing, because either alone can miss it. The
+    // event is the clean signal but may fire before this subscribes; the flag
+    // is captured at page load and cannot be missed, but says nothing about
+    // links that arrive later in the session.
+    // A failed link is routed there too, so the reason can be shown instead of
+    // leaving someone on the report form wondering whether anything happened.
+    if (arrivedFromRecoveryLink || recoveryLinkError) {
+      navigate('/set-password', { replace: true })
+    }
+
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setSessionLoading(false)
     })
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession)
+
+      // A recovery link carries no destination of its own: Supabase builds it
+      // from site_url, so it lands on "/" — the resident report form — with the
+      // tokens in the fragment, and the person never reaches the page that lets
+      // them set a password. Catching the event here works however the link was
+      // produced, including one sent from the Supabase dashboard, where no
+      // redirect can be specified at all.
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/set-password', { replace: true })
+      }
     })
 
     return () => subscription.subscription.unsubscribe()
-  }, [])
+  }, [navigate])
 
   useEffect(() => {
     if (!session) {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { recoveryLinkError } from '../lib/recoveryLink'
 import { ROLE_HOME } from '../lib/labels'
 import { Alert, Button, Field, Input, Spinner } from '../components/ui'
 import type { Role } from '../lib/types'
@@ -111,11 +112,19 @@ export function SetPassword() {
   if (status === 'invalid') {
     return (
       <div className="mx-auto max-w-sm px-4 py-24 text-center">
-        <h1 className="mb-2 text-2xl font-semibold text-ink text-balance">This Link Has Expired</h1>
+        <h1 className="mb-2 text-2xl font-semibold text-ink text-balance">
+          {recoveryLinkError ? 'That Link Didn’t Work' : 'This Link Has Expired'}
+        </h1>
         <p className="mb-6 text-sm text-ink-soft text-pretty">
-          Invitation and reset links are single-use and time-limited. Ask an administrator to send a
-          new one, or reset your password from the login page.
+          Invitation and reset links are <strong>single-use</strong> and time-limited — clicking the
+          same one twice will always fail the second time. Ask an administrator to send a new one, or
+          reset your password from the login page.
         </p>
+        {recoveryLinkError ? (
+          <div className="mb-6 text-left">
+            <Alert tone="error">{recoveryLinkError}</Alert>
+          </div>
+        ) : null}
         <Link
           to="/login"
           className="inline-flex rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-canvas transition-colors hover:bg-brand-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
