@@ -15,6 +15,9 @@ const VARIANTS = {
   success: 'bg-ok text-canvas hover:brightness-110 active:brightness-95 font-medium',
   secondary: 'bg-raised text-ink border border-line hover:bg-hover hover:border-line-strong',
   ghost: 'text-ink-soft hover:bg-raised hover:text-ink',
+  // For the confirm step of something irreversible only. If a destructive
+  // action looks the same as a routine one, the confirmation stops working.
+  danger: 'bg-danger text-canvas hover:brightness-110 active:brightness-95 font-medium',
 } as const
 
 const SIZES = {

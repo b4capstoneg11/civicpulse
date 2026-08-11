@@ -43,7 +43,12 @@ interface SetActiveBody {
   is_active: boolean
 }
 
-type RequestBody = CreateUserBody | SetActiveBody
+interface DeleteUserBody {
+  action: 'delete'
+  user_id: string
+}
+
+type RequestBody = CreateUserBody | SetActiveBody | DeleteUserBody
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS })
@@ -189,6 +194,64 @@ Deno.serve(async (req) => {
 
       if (error) return json({ error: error.message }, 400)
       return json({ ok: true })
+    }
+
+    // -------------------------------------------------------------------- delete
+    //
+    // Deactivation is the usual answer and is left exactly as it was: it keeps
+    // the account, the attribution and the ability to reverse it. This is for
+    // the rarer case where the account should not exist at all.
+    if (body.action === 'delete') {
+      const { data: target } = await admin
+        .from('profiles')
+        .select('id, role, department_id, full_name')
+        .eq('id', body.user_id)
+        .single()
+
+      if (!target) return json({ error: 'User not found' }, 404)
+
+      // Same shape as set_active, deliberately: a staff admin reaches only
+      // field engineers in their own department.
+      const mayManage =
+        caller.role === 'super_admin' ||
+        (caller.role === 'dept_admin' &&
+          target.role === 'field_engineer' &&
+          target.department_id === caller.department_id)
+
+      if (!mayManage) return json({ error: 'Not permitted to delete this user' }, 403)
+
+      // Deleting yourself removes the account you are acting through, and for a
+      // sole super admin it would leave nobody able to provision a replacement
+      // through the app at all.
+      if (target.id === caller.id) {
+        return json({ error: 'You cannot delete your own account' }, 400)
+      }
+
+      // Mirrors creation, where super admins cannot be made through the UI
+      // either -- they are provisioned directly in the database.
+      if (target.role === 'super_admin') {
+        return json({ error: 'Super admins must be removed directly in the database' }, 403)
+      }
+
+      // Release before deleting, not after: issues.assigned_to and
+      // profiles.created_by are both NO ACTION, so the delete fails outright
+      // while either still points here.
+      const { data: released, error: releaseError } = await admin.rpc('release_staff_references', {
+        p_user_id: target.id,
+      })
+
+      if (releaseError) {
+        return json({ error: `Could not release their work: ${releaseError.message}` }, 400)
+      }
+
+      // profiles cascades from auth.users, so this one delete removes both,
+      // along with their roster shifts and any sessions they still hold.
+      const { error: deleteError } = await admin.auth.admin.deleteUser(target.id)
+      if (deleteError) {
+        return json({ error: deleteError.message }, 400)
+      }
+
+      return json({ ok: true, released_issues: released ?? 0, full_name: target.full_name })
     }
 
     // -------------------------------------------------------------------- create

@@ -68,6 +68,10 @@ export function AdminUsers() {
   const [newRole, setNewRole] = useState<Role>(creatableRole)
   const [newDepartment, setNewDepartment] = useState(departmentId ?? '')
   const [submitting, setSubmitting] = useState(false)
+  // Deleting is irreversible, so the row asks first rather than acting on one
+  // click next to the button people press routinely.
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   const emailSuggestion = useMemo(
     () => (emailBlurred ? suggestEmailDomain(email.trim()) : null),
@@ -157,6 +161,51 @@ export function AdminUsers() {
     }
     toast.success(`${user.full_name} was ${user.is_active ? 'deactivated' : 'reactivated'}.`)
     load()
+  }
+
+  async function deleteUser(user: Profile) {
+    setError(null)
+    setDeleting(user.id)
+
+    const { data, error: fnError } = await supabase.functions.invoke<{
+      error?: string
+      released_issues?: number
+    }>('manage-users', {
+      body: { action: 'delete', user_id: user.id },
+    })
+
+    setDeleting(null)
+    setConfirmDelete(null)
+
+    const message = await readFunctionError(fnError, data ?? null)
+    if (message) {
+      setError(message)
+      return
+    }
+
+    const released = data?.released_issues ?? 0
+    toast.success(
+      released > 0
+        ? `${user.full_name} was deleted. ${released} ticket${released === 1 ? '' : 's'} returned to the queue.`
+        : `${user.full_name} was deleted.`
+    )
+    load()
+  }
+
+  /**
+   * Mirrors the rules the edge function enforces, so the button is only offered
+   * where it will work. The function decides for real — this is about not
+   * showing people an action that will fail.
+   */
+  function canDelete(user: Profile): boolean {
+    if (user.id === profile?.id) return false
+    if (user.role === 'super_admin') return false
+    if (profile?.role === 'super_admin') return true
+    return (
+      profile?.role === 'dept_admin' &&
+      user.role === 'field_engineer' &&
+      user.department_id === departmentId
+    )
   }
 
   const visibleUsers = hasGlobalScope
@@ -370,10 +419,40 @@ export function AdminUsers() {
                     <TableCell className="px-4 py-3 text-right">
                       {user.id === profile?.id ? (
                         <span className="text-xs text-subtle">You</span>
-                      ) : isReadOnly ? null : (
-                        <Button variant="secondary" size="sm" onClick={() => toggleActive(user)}>
-                          {user.is_active ? 'Deactivate' : 'Reactivate'}
-                        </Button>
+                      ) : isReadOnly ? null : confirmDelete === user.id ? (
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-xs text-danger">Delete permanently?</span>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            loading={deleting === user.id}
+                            onClick={() => deleteUser(user)}
+                          >
+                            Delete
+                          </Button>
+                          <Button variant="secondary" size="sm" onClick={() => setConfirmDelete(null)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-end gap-2">
+                          <Button variant="secondary" size="sm" onClick={() => toggleActive(user)}>
+                            {user.is_active ? 'Deactivate' : 'Reactivate'}
+                          </Button>
+                          {/* Only the two roles that may act on this user get
+                              the option at all; the edge function decides for
+                              real, this just avoids offering what will fail. */}
+                          {canDelete(user) ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-danger hover:bg-danger-wash"
+                              onClick={() => setConfirmDelete(user.id)}
+                            >
+                              Delete
+                            </Button>
+                          ) : null}
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
