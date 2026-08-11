@@ -51,6 +51,46 @@ function json(body: unknown, status = 200) {
 }
 
 /**
+ * A deliberately loose check that an address could plausibly exist.
+ *
+ * Checked here rather than relying on the form's type="email": this function is
+ * callable directly, so the browser is not the boundary.
+ *
+ * Loose on purpose. Strict RFC 5322 patterns reject more real addresses than
+ * fake ones — plus-addressing, apostrophes and long TLDs all trip them — and a
+ * false rejection blocks a legitimate colleague while a false acceptance costs
+ * nothing here. This is a filter, not proof: the only proof an address belongs
+ * to someone is sending something they must act on, which this flow does not do
+ * yet, because the admin sets the password and nothing is ever delivered.
+ *
+ * What it does catch is input that cannot work at all — no @, whitespace, no
+ * dotted domain, or lengths beyond what SMTP accepts.
+ */
+function isPlausibleEmail(value: string): boolean {
+  if (value.length > 254 || /\s/.test(value)) return false
+
+  const at = value.lastIndexOf('@')
+  if (at < 1 || at === value.length - 1) return false
+
+  const local = value.slice(0, at)
+  const domain = value.slice(at + 1)
+
+  if (local.length > 64) return false
+  // Split on the last @, so a second one would otherwise hide in the local part
+  // and "ravi@@gmail.com" would pass. RFC 5322 does allow @ inside a quoted
+  // local part; nobody typing a colleague's address here means that.
+  if (local.includes('@')) return false
+  if (local.startsWith('.') || local.endsWith('.') || local.includes('..')) return false
+  if (domain.startsWith('.') || domain.endsWith('.') || domain.includes('..')) return false
+  if (domain.startsWith('-') || domain.endsWith('-')) return false
+  if (!/^[A-Za-z0-9.-]+$/.test(domain)) return false
+
+  // A dotted TLD of at least two letters. "ravi@localhost" is legal on an
+  // intranet and never what anyone means when adding a colleague here.
+  return /\.[A-Za-z]{2,}$/.test(domain)
+}
+
+/**
  * Describes who already holds an email address, e.g.
  * "Neelay (Field Engineer, Public Works & Infrastructure)".
  * Best-effort: returns null rather than throwing, since this only enriches an
@@ -155,11 +195,21 @@ Deno.serve(async (req) => {
     // -------------------------------------------------------------------- create
     if (body.action !== 'create') return json({ error: 'Unknown action' }, 400)
 
-    const { email, password, full_name, role, department_id, phone } = body
+    const { password, full_name, role, department_id, phone } = body
 
-    if (!email || !password || !full_name || !role) {
+    if (!body.email || !password || !full_name || !role) {
       return json({ error: 'email, password, full_name and role are all required' }, 400)
     }
+
+    // Normalised here rather than trusted from the client. Supabase lower-cases
+    // addresses for auth anyway, and the duplicate check below compares
+    // case-insensitively -- storing the raw input just leaves the two out of step.
+    const email = String(body.email).trim().toLowerCase()
+
+    if (!isPlausibleEmail(email)) {
+      return json({ error: `"${body.email}" is not a valid email address.` }, 400)
+    }
+
     if (password.length < 8) {
       return json({ error: 'Password must be at least 8 characters' }, 400)
     }

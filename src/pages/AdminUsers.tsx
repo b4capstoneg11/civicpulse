@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { readFunctionError } from '../lib/functionError'
+import { suggestEmailDomain } from '../lib/emailSuggest'
 import { useAuth } from '../hooks/useAuth'
 import { toast } from 'sonner'
 import { Alert, Button, EmptyState, Field, Input } from '../components/ui'
@@ -60,11 +61,19 @@ export function AdminUsers() {
 
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  // Held back until the field is left, so a suggestion cannot appear against a
+  // half-typed domain — "ravi@gm" is not a mistake yet.
+  const [emailBlurred, setEmailBlurred] = useState(false)
   const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
   const [newRole, setNewRole] = useState<Role>(creatableRole)
   const [newDepartment, setNewDepartment] = useState(departmentId ?? '')
   const [submitting, setSubmitting] = useState(false)
+
+  const emailSuggestion = useMemo(
+    () => (emailBlurred ? suggestEmailDomain(email.trim()) : null),
+    [email, emailBlurred]
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -131,6 +140,7 @@ export function AdminUsers() {
     toast.success(`${fullName.trim()} can now sign in with ${email.trim()}.`)
     setFullName('')
     setEmail('')
+    setEmailBlurred(false)
     setPassword('')
     setPhone('')
     load()
@@ -199,17 +209,41 @@ export function AdminUsers() {
 
             <Field label="Email Address" required>
               {(props) => (
-                <Input
-                  {...props}
-                  type="email"
-                  name="email"
-                  autoComplete="off"
-                  spellCheck={false}
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ravi@department.gov…"
-                />
+                <>
+                  <Input
+                    {...props}
+                    type="email"
+                    name="email"
+                    autoComplete="off"
+                    spellCheck={false}
+                    required
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      setEmailBlurred(false)
+                    }}
+                    onBlur={() => setEmailBlurred(true)}
+                    placeholder="ravi@department.gov…"
+                  />
+                  {/* A suggestion, never a block — the address stays exactly as
+                      typed unless the admin chooses otherwise. */}
+                  {emailSuggestion ? (
+                    <p className="mt-1.5 text-sm text-ink-soft" role="status">
+                      Did you mean{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmail(emailSuggestion)
+                          setEmailBlurred(false)
+                        }}
+                        className="rounded font-medium text-brand underline underline-offset-2 hover:text-brand-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+                      >
+                        {emailSuggestion}
+                      </button>
+                      ?
+                    </p>
+                  ) : null}
+                </>
               )}
             </Field>
 
