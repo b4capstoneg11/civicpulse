@@ -14,6 +14,7 @@ import { ReportIssue } from './pages/ReportIssue'
 const TrackIssue = lazy(() => import('./pages/TrackIssue').then((m) => ({ default: m.TrackIssue })))
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
 const Unsubscribe = lazy(() => import('./pages/Unsubscribe').then((m) => ({ default: m.Unsubscribe })))
+const SetPassword = lazy(() => import('./pages/SetPassword').then((m) => ({ default: m.SetPassword })))
 const Board = lazy(() => import('./pages/Board').then((m) => ({ default: m.Board })))
 const MyWork = lazy(() => import('./pages/MyWork').then((m) => ({ default: m.MyWork })))
 const AdminUsers = lazy(() => import('./pages/AdminUsers').then((m) => ({ default: m.AdminUsers })))
@@ -85,6 +86,9 @@ function App() {
                 <Route path="/track" element={<TrackIssue />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/unsubscribe" element={<Unsubscribe />} />
+                {/* Where invite and password-reset links land. Public: the
+                    caller has a session from the link, not from signing in. */}
+                <Route path="/set-password" element={<SetPassword />} />
 
                 <Route
                   path="/board"
